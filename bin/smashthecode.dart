@@ -309,7 +309,9 @@ class Point {
     int y;
     Point parent;
 
-    Point(this.x, this.y);
+    Point(this.x, this.y){
+        this.parent = this;
+    }
 
     String toString() { return "{$x,$y}"; }
 
@@ -344,6 +346,37 @@ class Point {
         return (point.x == x &&
             point.y == y);
     }
+}
+
+class DisJointPoints {
+    Map<Point, int> set = new Map<Point, int>();
+
+    void operator[]=(Point key, int value){
+        set[key] = value;
+    }
+
+    int operator[](Point key){
+        return findGroup(key);
+    }
+
+    Point find(Point point){
+        if(point.parent == point){
+            return point;
+        } else {
+            return find(point.parent);
+        }
+    }
+
+    int findGroup(Point point){
+        return set[find(point)];
+    }
+
+    void union(Point a, Point b){
+        Point aRoot = find(a);
+        Point bRoot = find(b);
+        aRoot.parent = bRoot;
+    }
+
 }
 
 
@@ -497,7 +530,7 @@ Map<num, List<Move>> rankMoves(Player player){
 Map<int, Set<Point>> connectedColors(List<List<Cell>> board){
     Map<int, Set<Point>> blobs = new Map<int, Set<Point>>();
     Map<int, Set<int>> equivs = new Map<int, Set<int>>();
-    Map<Point, int> labels = new Map<Point, int>();
+    DisJointPoints labels = new DisJointPoints();
     int labelIndex = 0;
     //TODO scan map, build blob and equivalency list
     //first pass
@@ -550,6 +583,8 @@ Map<int, Set<Point>> connectedColors(List<List<Cell>> board){
                     labels[cp] = minLabel;
 
                     //update equivs
+                    // union both sets of labels together
+                    // for each group in labels, set equivs[group] to unioned list
                     equivs[northLabel].union(equivs[westLabel]);
                     equivs[westLabel].union(equivs[northLabel]);
                 }
