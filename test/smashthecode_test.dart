@@ -38,13 +38,53 @@ void main() {
   group('moves:', () {
     test('is valid', () {
       var board = getEmptyBoard();
-      Move move = new Move(0, 3);
-      expect(move.isValid(board), true);
+      Move move0 = new Move(0, 0);
+      Move move1 = new Move(0, 1);
+      Move move2 = new Move(1, 2);
+      Move move3 = new Move(0, 3);
+      expect(move0.isValid(board), true);
+      expect(move1.isValid(board), true);
+      expect(move2.isValid(board), true);
+      expect(move3.isValid(board), true);
+      board[0] = new List.filled(10, Cell.red);
+      expect(move0.isValid(board), true);
+      expect(move1.isValid(board), true);
+      expect(move2.isValid(board), true);
+      expect(move3.isValid(board), true);
 
       board[0] = new List.filled(11, Cell.red);
-      expect(move.isValid(board), false);
+      expect(move0.isValid(board), true);
+      expect(move1.isValid(board), false);
+      expect(move2.isValid(board), true);
+      expect(move3.isValid(board), false);
+
+      board[0] = new List.filled(12, Cell.red);
+      expect(move0.isValid(board), false);
+      expect(move1.isValid(board), false);
+      expect(move2.isValid(board), false);
+      expect(move3.isValid(board), false);
+
+
     });
 
+  });
+
+  group('connected colors:', () {
+    test('empty board', () {
+      var board = getEmptyBoard();
+      Map<int, Set<Point>> result = connectedColors(board);
+      expect(result.isEmpty, true);
+    });
+    test('1 pair', () {
+      var board = getEmptyBoard();
+      board[0] = new List.filled(1, Cell.red);
+      board[1] = new List.filled(1, Cell.blue);
+      Map<int, Set<Point>> result = connectedColors(board);
+      expect(result.isEmpty, false);
+      expect(result.keys.length, 2);
+      expect(result[0].length, 1);
+      expect(result[1].length, 1);
+    });
   });
 
 }

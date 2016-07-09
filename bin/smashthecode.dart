@@ -439,7 +439,8 @@ Cell colorToCell(int color){
             return Cell.red;
         case 5:
             return Cell.yellow;
-
+        default:
+            return Cell.empty;
     }
 }
 
@@ -451,7 +452,6 @@ Cell stringToCell(String char){
             return Cell.skull;
         default:
             return colorToCell(int.parse(char));
-
     }
 }
 
@@ -460,7 +460,7 @@ String cellToString(Cell cell){
         case Cell.empty:
             return ".";
         case Cell.skull:
-            return "X";
+            return "0";
         default:
             return cell.toString().substring(5, 6);
 
