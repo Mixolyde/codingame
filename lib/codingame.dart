@@ -2,6 +2,7 @@
 // is governed by a BSD-style license that can be found in the LICENSE file.
 import 'dart:math';
 
+//Common classes used in codingames
 class Point {
     int x;
     int y;
@@ -33,14 +34,12 @@ class Point {
         ];
 
     num distance(Point other) {
-        var dx = x - other.x;
-        var dy = y - other.y;
         return sqrt(distance2(other));
     }
 
     int distance2(Point other){
-        var dx = x - other.x;
-        var dy = y - other.y;
+        int dx = x - other.x;
+        int dy = y - other.y;
         return dx * dx + dy * dy;
     }
 
