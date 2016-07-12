@@ -86,9 +86,14 @@ class Player {
         if(!alive){
             return double.NEGATIVE_INFINITY;
         }
+        int threeCount = threeConnectedCount(board);
+        int twoCount = twoConnectedCount(board);
         Map blobs = connectedColors(board);
 
-        return (6 * 12) - this.totalBlocks +
+        return 
+            twoCount * 5 + 
+            threeCount * 10 + 
+            (6 * 12) - this.totalBlocks +
             this.generatedNuisance +
             this.score;
     }
@@ -349,10 +354,16 @@ class Point {
 }
 
 class DisJointPoints {
-    Map<Point, int> set = new Map<Point, int>();
+    Map<Point, int> map = new Map<Point, int>();
 
     void operator[]=(Point key, int value){
-        set[key] = value;
+        if(map.containsKey(key)){
+            map[find(key)] = value;
+        } else {
+            //add new key
+            key.parent = key;
+            map[key] = value;
+        }
     }
 
     int operator[](Point key){
@@ -368,7 +379,7 @@ class DisJointPoints {
     }
 
     int findGroup(Point point){
-        return set[find(point)];
+        return map[find(point)];
     }
 
     void union(Point a, Point b){
@@ -379,6 +390,13 @@ class DisJointPoints {
 
 }
 
+List<Point> validNeighbors(Point current, List<List<Cell>> board){
+    List<Point> valids = current.neighbors4.where((neighbor) =>
+        neighbor.x >= 0 && neighbor.x < board[current.y].length &&
+        neighbor.y >= 0 && neighbor.y < 6
+    ).toList();
+    return valids;
+}
 
 List<Point> connected(List<List<Cell>> board, Point start){
     List<Point> open = [start];
@@ -403,10 +421,7 @@ List<Point> connectedRec(List<List<Cell>> board,
         acc.add(current);
         closed.add(current);
         //generate neighbors and recurse
-        List<Point> valids = current.neighbors4.where((neighbor) =>
-            neighbor.x >= 0 && neighbor.x < board[current.y].length &&
-            neighbor.y >= 0 && neighbor.y < 6
-        ).toList();
+        List<Point> valids = validNeighbors(current, board);
 
         for(Point valid in valids){
             if(!open.contains(valid) && !closed.contains(valid)){
@@ -530,8 +545,8 @@ Map<num, List<Move>> rankMoves(Player player){
 Map<int, Set<Point>> connectedColors(List<List<Cell>> board){
     Map<int, Set<Point>> blobs = new Map<int, Set<Point>>();
     Map<int, Set<int>> equivs = new Map<int, Set<int>>();
-    DisJointPoints labels = new DisJointPoints();
-    int labelIndex = 0;
+    DisJointPoints groups = new DisJointPoints();
+    int groupIndex = 0;
     //TODO scan map, build blob and equivalency list
     //first pass
     for(int row = 0; row < 6; row++){
@@ -550,43 +565,43 @@ Map<int, Set<Point>> connectedColors(List<List<Cell>> board){
                     matchesWest = true;
                 }
                 if(!matchesNorth && !matchesWest){
-                    blobs[labelIndex] = new Set.from([cp]);
-                    equivs[labelIndex] = new Set.from([labelIndex]);
-                    labels[cp] = labelIndex;
+                    blobs[groupIndex] = new Set.from([cp]);
+                    equivs[groupIndex] = new Set.from([groupIndex]);
+                    groups[cp] = groupIndex;
                     //increment the label index
-                    labelIndex++;
+                    groupIndex++;
                 } else if (matchesNorth && !matchesWest){
-                    int label = labels[northPoint];
-                    blobs[label].add(cp);
-                    labels[cp] = label;
+                    int group = groups[northPoint];
+                    blobs[group].add(cp);
+                    groups[cp] = group;
                 } else if (!matchesNorth && matchesWest) {
-                    int label = labels[westPoint];
-                    blobs[label].add(cp);
-                    labels[cp] = label;
-                } else if (matchesNorth && matchesWest && labels[northPoint] == labels[westPoint]) {
+                    int group = groups[westPoint];
+                    blobs[group].add(cp);
+                    groups[cp] = group;
+                } else if (matchesNorth && matchesWest && groups[northPoint] == groups[westPoint]) {
                     //current point matches north and west and they're already the same label
                     // p p
                     // p X
-                    int label = labels[westPoint];
-                    blobs[label].add(cp);
-                    labels[cp] = label;
+                    int group = groups[westPoint];
+                    blobs[group].add(cp);
+                    groups[cp] = group;
                 } else {
                     //current point matches north and west, but they are different labels
                     // b p
                     // p X
 
                     //add to lowest label
-                    int northLabel = labels[northPoint];
-                    int westLabel = labels[westPoint];
-                    int minLabel = min(northLabel, westLabel);
-                    blobs[minLabel].add(cp);
-                    labels[cp] = minLabel;
+                    int northGroup = groups[northPoint];
+                    int westGroup = groups[westPoint];
+                    int minGroup = min(northGroup, westGroup);
+                    blobs[minGroup].add(cp);
+                    groups[cp] = minGroup;
 
                     //update equivs
                     // union both sets of labels together
                     // for each group in labels, set equivs[group] to unioned list
-                    equivs[northLabel].union(equivs[westLabel]);
-                    equivs[westLabel].union(equivs[northLabel]);
+                    equivs[northGroup].union(equivs[westGroup]);
+                    equivs[westGroup].union(equivs[northGroup]);
                 }
             }
         }
@@ -596,4 +611,38 @@ Map<int, Set<Point>> connectedColors(List<List<Cell>> board){
     //reduce blobs with same equivs
 
     return blobs;
+}
+
+int threeConnectedCount(List<List<Cell>> board){
+    int threeCount = 0;
+    for(int row = 0; row < 6; row++){
+        for(int col = 0; col < board[row].length; col++){
+            Point cp = new Point(col, row);
+            Cell current = board[row][col];
+            List<Point> valids = validNeighbors(cp, board);
+            if(current != Cell.empty &&
+            current != Cell.skull &&
+            valids.where((valid) => cellAt(board, valid) == current).length == 3){
+                threeCount++;
+            }
+        }
+    }
+    return threeCount;
+}
+
+int twoConnectedCount(List<List<Cell>> board){
+    int twoCount = 0;
+    for(int row = 0; row < 6; row++){
+        for(int col = 0; col < board[row].length; col++){
+            Point cp = new Point(col, row);
+            Cell current = board[row][col];
+            List<Point> valids = validNeighbors(cp, board);
+            if(current != Cell.empty &&
+            current != Cell.skull &&
+            valids.where((valid) => cellAt(board, valid) == current).length == 2){
+                twoCount++;
+            }
+        }
+    }
+    return twoCount;
 }
