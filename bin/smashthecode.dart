@@ -89,6 +89,13 @@ class Player {
         int threeCount = threeConnectedCount(board);
         int twoCount = twoConnectedCount(board);
         Map blobs = connectedColors(board);
+        printBoard(board);
+        stderr.writeln(blobs);
+        int blobThreeCount = blobs.values.where((blob) =>
+        blob.length == 3).length;
+        stderr.writeln("3Count $threeCount blobcount $blobThreeCount");
+        
+        assert(threeCount == blobThreeCount);
 
         return 
             twoCount * 5 + 
@@ -312,11 +319,8 @@ class Move {
 class Point {
     int x;
     int y;
-    Point parent;
 
-    Point(this.x, this.y){
-        this.parent = this;
-    }
+    Point(this.x, this.y);
 
     String toString() { return "{$x,$y}"; }
 
@@ -355,13 +359,14 @@ class Point {
 
 class DisJointPoints {
     Map<Point, int> map = new Map<Point, int>();
+    Map<Point, Point> parents = new Map<Point, Point>();
 
     void operator[]=(Point key, int value){
         if(map.containsKey(key)){
             map[find(key)] = value;
         } else {
             //add new key
-            key.parent = key;
+            parents[key] = key;
             map[key] = value;
         }
     }
@@ -371,10 +376,13 @@ class DisJointPoints {
     }
 
     Point find(Point point){
-        if(point.parent == point){
+        if(!parents.containsKey(point)){
+            return null;
+        }
+        if(parents[point] == point){
             return point;
         } else {
-            return find(point.parent);
+            return find(parents[point]);
         }
     }
 
@@ -383,17 +391,18 @@ class DisJointPoints {
     }
 
     void union(Point a, Point b){
+        int group = findGroup(a);
         Point aRoot = find(a);
         Point bRoot = find(b);
-        aRoot.parent = bRoot;
+        parents[bRoot] = aRoot;
     }
 
 }
 
 List<Point> validNeighbors(Point current, List<List<Cell>> board){
     List<Point> valids = current.neighbors4.where((neighbor) =>
-        neighbor.x >= 0 && neighbor.x < board[current.y].length &&
-        neighbor.y >= 0 && neighbor.y < 6
+        neighbor.y >= 0 && neighbor.y < 6 &&
+        neighbor.x >= 0 && neighbor.x < board[neighbor.y].length
     ).toList();
     return valids;
 }
@@ -565,6 +574,8 @@ Map<int, Set<Point>> connectedColors(List<List<Cell>> board){
                     matchesWest = true;
                 }
                 if(!matchesNorth && !matchesWest){
+                    //new group discovered
+                    // stderr.writeln("Creating blob group $groupIndex");
                     blobs[groupIndex] = new Set.from([cp]);
                     equivs[groupIndex] = new Set.from([groupIndex]);
                     groups[cp] = groupIndex;
@@ -572,19 +583,25 @@ Map<int, Set<Point>> connectedColors(List<List<Cell>> board){
                     groupIndex++;
                 } else if (matchesNorth && !matchesWest){
                     int group = groups[northPoint];
+                    // stderr.writeln("Matching north blob group $group");
                     blobs[group].add(cp);
                     groups[cp] = group;
+                    groups.union(northPoint, cp);
                 } else if (!matchesNorth && matchesWest) {
                     int group = groups[westPoint];
+                    // stderr.writeln("Matching west blob group $group");
                     blobs[group].add(cp);
                     groups[cp] = group;
+                    groups.union(westPoint, cp);
                 } else if (matchesNorth && matchesWest && groups[northPoint] == groups[westPoint]) {
                     //current point matches north and west and they're already the same label
                     // p p
                     // p X
                     int group = groups[westPoint];
+                    // stderr.writeln("Matching west and north blob group $group");
                     blobs[group].add(cp);
                     groups[cp] = group;
+                    groups.union(westPoint, cp);
                 } else {
                     //current point matches north and west, but they are different labels
                     // b p
@@ -594,14 +611,20 @@ Map<int, Set<Point>> connectedColors(List<List<Cell>> board){
                     int northGroup = groups[northPoint];
                     int westGroup = groups[westPoint];
                     int minGroup = min(northGroup, westGroup);
+                    groups[northPoint] = minGroup;
+                    groups[westPoint] = minGroup;
                     blobs[minGroup].add(cp);
-                    groups[cp] = minGroup;
+                    groups.union(northPoint, westPoint);
+                    groups.union(northPoint, cp);
 
                     //update equivs
                     // union both sets of labels together
                     // for each group in labels, set equivs[group] to unioned list
-                    equivs[northGroup].union(equivs[westGroup]);
-                    equivs[westGroup].union(equivs[northGroup]);
+                    Set<int> allEquivs = new Set<int>();
+                    allEquivs.addAll(equivs[northGroup]);
+                    allEquivs.addAll(equivs[westGroup]);
+                    
+                    allEquivs.forEach((equiv) => equivs[equiv] = allEquivs);
                 }
             }
         }
