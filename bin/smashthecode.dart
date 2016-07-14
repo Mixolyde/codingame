@@ -88,14 +88,14 @@ class Player {
         }
         int threeCount = threeConnectedCount(board);
         int twoCount = twoConnectedCount(board);
-        Map blobs = connectedColors(board);
-        printBoard(board);
-        stderr.writeln(blobs);
-        int blobThreeCount = blobs.values.where((blob) =>
-        blob.length == 3).length;
-        stderr.writeln("3Count $threeCount blobcount $blobThreeCount");
+        // Map blobs = connectedColors(board);
+        // printBoard(board);
+        // stderr.writeln(blobs);
+        // int blobThreeCount = blobs.values.where((blob) =>
+        // blob.length == 3).length;
+        // stderr.writeln("3Count $threeCount blobcount $blobThreeCount");
 
-        assert(threeCount == blobThreeCount);
+        // assert(threeCount == blobThreeCount);
 
         return
             twoCount * 5 +
