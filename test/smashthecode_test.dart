@@ -87,6 +87,103 @@ void main() {
     });
   });
 
+  group('validNeighbors:', () {
+    test('empty board', () {
+      var board = getEmptyBoard();
+      var result = validNeighbors(new Point(0,0), board);
+      expect(result.length, 0);
+    });
+    test('vertical pair', () {
+      var board = getEmptyBoard();
+      board[0] = new List.filled(2, Cell.red);
+      var result = validNeighbors(new Point(0,0), board);
+      expect(result.length, 1);
+      result = validNeighbors(new Point(1,0), board);
+      expect(result.length, 1);
+    });
+    test('horizontal pair', () {
+      var board = getEmptyBoard();
+      board[0] = new List.filled(1, Cell.red);
+      board[1] = new List.filled(1, Cell.red);
+      var result = validNeighbors(new Point(0,0), board);
+      expect(result.length, 1);
+      result = validNeighbors(new Point(0,1), board);
+      expect(result.length, 1);
+    });
+    test('three neighbors', () {
+      var board = getEmptyBoard();
+      board[0] = new List.filled(1, Cell.red);
+      board[1] = new List.filled(2, Cell.red);
+      board[2] = new List.filled(1, Cell.red);
+      var result = validNeighbors(new Point(0,0), board);
+      expect(result.length, 1);
+      result = validNeighbors(new Point(0,1), board);
+      expect(result.length, 3);
+      result = validNeighbors(new Point(0,2), board);
+      expect(result.length, 1);
+    });
+    test('four neighbors', () {
+      var board = getEmptyBoard();
+      //r r
+      //r r r
+      //r r
+      board[0] = new List.filled(2, Cell.red);
+      board[1] = new List.filled(3, Cell.red);
+      board[2] = new List.filled(2, Cell.red);
+      var result = validNeighbors(new Point(0,0), board);
+      expect(result.length, 2);
+      result = validNeighbors(new Point(1,0), board);
+      expect(result.length, 2);
+      result = validNeighbors(new Point(0,1), board);
+      expect(result.length, 3);
+      result = validNeighbors(new Point(1,1), board);
+      expect(result.length, 4);
+      result = validNeighbors(new Point(2,1), board);
+      expect(result.length, 1);
+      result = validNeighbors(new Point(0,2), board);
+      expect(result.length, 2);
+      result = validNeighbors(new Point(1,2), board);
+      expect(result.length, 2);
+    });
+  });
+
+  group('threeConnectedCount:', () {
+    test('empty board', () {
+      var board = getEmptyBoard();
+      int result = threeConnectedCount(board);
+      expect(result, 0);
+    });
+    test('6 pairs', () {
+      var board = getEmptyBoard();
+      board[0] = new List.filled(2, Cell.red);
+      board[1] = new List.filled(2, Cell.blue);
+      board[2] = new List.filled(2, Cell.yellow);
+      board[3] = new List.filled(2, Cell.green);
+      board[4] = new List.filled(2, Cell.pink);
+      board[5] = new List.filled(2, Cell.red);
+      int result = threeConnectedCount(board);
+      expect(result, 0);
+    });
+    test('1 and 2', () {
+      var board = getEmptyBoard();
+      board[0] = new List.filled(1, Cell.red);
+      board[1] = new List.filled(2, Cell.red);
+      printBoard(board);
+
+      int result = threeConnectedCount(board);
+      expect(result, 1);
+    });
+    test('2 and 1', () {
+      var board = getEmptyBoard();
+      board[0] = new List.filled(2, Cell.red);
+      board[1] = new List.filled(1, Cell.red);
+      printBoard(board);
+
+      int result = threeConnectedCount(board);
+      expect(result, 1);
+    });
+  });
+
 }
 
 List<List<Cell>> getEmptyBoard() { return new List.generate(6, (int index) => new List<Cell>()); }

@@ -94,12 +94,12 @@ class Player {
         int blobThreeCount = blobs.values.where((blob) =>
         blob.length == 3).length;
         stderr.writeln("3Count $threeCount blobcount $blobThreeCount");
-        
+
         assert(threeCount == blobThreeCount);
 
-        return 
-            twoCount * 5 + 
-            threeCount * 10 + 
+        return
+            twoCount * 5 +
+            threeCount * 10 +
             (6 * 12) - this.totalBlocks +
             this.generatedNuisance +
             this.score;
@@ -623,7 +623,7 @@ Map<int, Set<Point>> connectedColors(List<List<Cell>> board){
                     Set<int> allEquivs = new Set<int>();
                     allEquivs.addAll(equivs[northGroup]);
                     allEquivs.addAll(equivs[westGroup]);
-                    
+
                     allEquivs.forEach((equiv) => equivs[equiv] = allEquivs);
                 }
             }
@@ -643,9 +643,11 @@ int threeConnectedCount(List<List<Cell>> board){
             Point cp = new Point(col, row);
             Cell current = board[row][col];
             List<Point> valids = validNeighbors(cp, board);
+            // stderr.writeln("$cp $current $valids");
+            // valids.forEach((valid) => stderr.writeln("$valid ${cellAt(board, valid)}"));
             if(current != Cell.empty &&
             current != Cell.skull &&
-            valids.where((valid) => cellAt(board, valid) == current).length == 3){
+            valids.where((valid) => cellAt(board, valid) == current).length == 2){
                 threeCount++;
             }
         }
@@ -662,7 +664,7 @@ int twoConnectedCount(List<List<Cell>> board){
             List<Point> valids = validNeighbors(cp, board);
             if(current != Cell.empty &&
             current != Cell.skull &&
-            valids.where((valid) => cellAt(board, valid) == current).length == 2){
+            valids.where((valid) => cellAt(board, valid) == current).length == 1){
                 twoCount++;
             }
         }
