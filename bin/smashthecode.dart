@@ -61,19 +61,19 @@ void main() {
         sw = new Stopwatch();
         sw.start();
         stderr.writeln("Reset Clock: ${sw.elapsedMilliseconds}");
-        
+
         stderr.writeln("Upcoming: $pairs");
         printBoard(myBoard);
-       
-        //single depth ranking until depthEval works 
+
+        //single depth ranking until depthEval works
         Map rankMap = rankMoves(me);
         stderr.writeln("Rankmap $rankMap");
         List<Move> bestMoves = rankMap[rankMap.keys.last];
         Move move = bestMoves[rand.nextInt(bestMoves.length)];
-        
+
         Solution sol = findSolution(me, opp, pairs.take(5).toList());
         Move solMove = sol.p1Moves.first;
-        
+
         if(rankMap.keys.last > sol.p1Eval){
             stderr.writeln("Chose single-depth move $move");
             print("${move.col} ${move.rot}");
@@ -95,19 +95,19 @@ class Solution{
     List<Move> p1Moves;
     List<Move> p2Moves;
     List<Pair> pairs;
-    
+
     int p1Death = -1;
     int p2Death = -1;
-    
+
     num p1Nuisance = 0;
     num p2Nuisance = 0;
-    
+
     num p1Eval = -1;
     num p2Eval = -1;
-    
+
     num p1Discount;
     num p2Discount;
-    
+
     Solution(this.p1Start, this.p2Start, this.pairs, this.p1Moves, this.p2Moves){
         p1End = p1Start.clone();
         p2End = p2Start.clone();
@@ -115,7 +115,7 @@ class Solution{
         p2Discount = p2Start.score;
         applySolution();
     }
-    
+
     void applySolution(){
         for(int index = 0; index < pairs.length && p1End.alive; index++){
             p1End = p1End.applyMove(p1Moves[index], pairs[index]);
@@ -124,7 +124,7 @@ class Solution{
                 p1Death = index;
             }
         }
-        
+
         this.p1Eval = p1End.evaluate();
         if(p1Death > 0){
             this.p1Eval = -1000 + p1Death;
@@ -133,9 +133,9 @@ class Solution{
         // stderr.writeln("After solution score: ${p1End.score}");
         // stderr.writeln("After solution board: ");
         // printBoard(p1End.board);
-        
+
     }
-    
+
 }
 
 class Player {
@@ -147,21 +147,21 @@ class Player {
     bool alive = true;
 
     Player(this.board, this.score, this.nuisancePoints, this.turn);
-    
+
     Player clone(){
         List<List<Cell>> newBoard = new List.generate(6, (index) =>
             new List.from(this.board[index]));
-        
+
         Player clone = new Player(newBoard, this.score, this.nuisancePoints, this.turn);
         clone.alive = this.alive;
         clone.generatedNuisance = this.generatedNuisance;
-        
+
         return clone;
     }
 
     int get totalBlocks => board.fold(0, (prev, element) => prev + element.length);
-    int get totalSkulls => board.fold(0, 
-        (prev, element) => prev + 
+    int get totalSkulls => board.fold(0,
+        (prev, element) => prev +
         element.where((cell) => cell == Cell.skull).length);
 
     num evaluate(){
@@ -175,11 +175,11 @@ class Player {
             twoCount * 2 +
             threeCount * 5 +
             this.totalBlocks * -2 +
-            totalSkulls * -3 + 
+            totalSkulls * -3 +
             this.generatedNuisance +
             this.score * 1;
     }
-    
+
     //TODO add skull drop update method (board, int rows);
 
     Player applyMove(Move move, Pair pair){
@@ -288,7 +288,7 @@ class Player {
                     }
                     groupBonus = 0;
                     colorBonus = 0;
-                    
+
                     Set<Cell> colorsRemoved = new Set<Cell>();
                     for(Set<Point> blob in blobsToRemove){
                         colorsRemoved.add(cellAt(newBoard, blob.first));
@@ -296,9 +296,9 @@ class Player {
                         groupBonus += groupBonusValue(blob.length);
                         removals.addAll(blob);
                     }
-                    
+
                     colorBonus += colorBonusValue(colorsRemoved.length);
-                    
+
                     removeBlobs(newBoard, removals);
 
                     scoreUpdate += 10 * blocksCleared *
@@ -318,7 +318,7 @@ class Player {
     void addNuisancePoints(int np){
         nuisancePoints += np;
     }
-    
+
     int groupBonusValue(int blocks){
         if(blocks > 10){
             return 8;
@@ -326,11 +326,11 @@ class Player {
             return blocks - 4;
         }
     }
-    
+
     int colorBonusValue(int colors){
         return [0,2,4,8,16][colors];
     }
-    
+
     void removeBlobs(List<List<Cell>> board, Set<Point> removals){
         addRemovableSkulls(board, removals);
         // stderr.writeln("Added skulls to remove: $removals");
@@ -669,11 +669,11 @@ int threeConnectedCount(List<List<Cell>> board){
             if(current != Cell.empty && current != Cell.skull) {
                 var group = valids.where((valid) => cellAt(board, valid) == current).toList();
                 group.add(cp);
-                
-                if(group.length == 3){  
-                    int emptyNeighbors = group.expand((point) => 
-                    validNeighbors(board, point)
-                    .map((mappoint) => cellAt(board, mappoint)))
+
+                if(group.length == 3){
+                    int emptyNeighbors = group.expand((point) =>
+                    validNeighbors(board, point)).toSet()
+                    .map((mappoint) => cellAt(board, mappoint))
                     .where((cell) => cell == Cell.empty).length;
                         threeCount += emptyNeighbors;
                 }
@@ -705,7 +705,7 @@ void addRemovableSkulls(List<List<Cell>> board, Set<Point> removals){
     for(int row = 0; row < 6; row++){
         for(int col = 0; col < board[row].length; col++){
             Point cp = new Point(col, row);
-            if(board[row][col] == Cell.skull && 
+            if(board[row][col] == Cell.skull &&
                 validNeighbors(board, cp).any((nbr) => removals.contains(nbr))){
                 skulls.add(cp);
             }
@@ -715,24 +715,24 @@ void addRemovableSkulls(List<List<Cell>> board, Set<Point> removals){
 }
 
 Solution findSolution(Player me, Player opp, List<Pair> pairs){
-    
-    Solution current = new Solution(me, opp, pairs, 
+
+    Solution current = new Solution(me, opp, pairs,
         randomMoves(pairs),
         randomMoves(pairs));
-    
+
     while(sw.elapsedMilliseconds < TIMEOUT){
-        Solution newSol = new Solution(me, opp, pairs, 
+        Solution newSol = new Solution(me, opp, pairs,
             randomMoves(pairs),
             randomMoves(pairs));
-        if(newSol.p1Discount  + newSol.p1Eval > 
+        if(newSol.p1Discount  + newSol.p1Eval >
             current.p1Discount + current.p1Eval){
             current = newSol;
         }
     }
     stderr.writeln("Returning solution with eval ${current.p1Eval}");
-    
+
     return current;
-        
+
 }
 
 List<Move> randomMoves(pairs){
