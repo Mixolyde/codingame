@@ -12,6 +12,10 @@ List inputs;
 List<Pair> pairs = [];
 int TURN_LIMIT = 200;
 int turn = 0;
+int TIMEOUT = 80;
+
+//timer class
+Stopwatch sw = new Stopwatch();
 
 enum Cell {empty, skull, blue, green, pink, red, yellow}
 
@@ -54,33 +58,111 @@ void main() {
         me = new Player(myBoard, score1, 0, turn);
         opp = new Player(oppBoard, score2, 0, turn);
 
+        sw = new Stopwatch();
+        sw.start();
+        stderr.writeln("Reset Clock: ${sw.elapsedMilliseconds}");
+        
         stderr.writeln("Upcoming: $pairs");
         printBoard(myBoard);
+       
+        //single depth ranking until depthEval works 
         Map rankMap = rankMoves(me);
         stderr.writeln("Rankmap $rankMap");
-
         List<Move> bestMoves = rankMap[rankMap.keys.last];
-
         Move move = bestMoves[rand.nextInt(bestMoves.length)];
-
-        print("${move.col} ${move.rot}");
+        
+        Solution sol = findSolution(me, opp, pairs.take(5).toList());
+        Move solMove = sol.p1Moves.first;
+        
+        if(rankMap.keys.last > sol.p1Eval){
+            stderr.writeln("Chose single-depth move $move");
+            print("${move.col} ${move.rot}");
+        } else {
+            stderr.writeln("Chose solution move $solMove");
+            print("${solMove.col} ${solMove.rot}");
+        }
 
         turn++;
         turn++;
     }
 }
 
+class Solution{
+    Player p1Start;
+    Player p2Start;
+    Player p1End;
+    Player p2End;
+    List<Move> p1Moves;
+    List<Move> p2Moves;
+    List<Pair> pairs;
+    
+    int p1Death = -1;
+    int p2Death = -1;
+    
+    num p1Nuisance = 0;
+    num p2Nuisance = 0;
+    
+    num p1Eval = -1;
+    num p2Eval = -1;
+    
+    num p1Discount;
+    num p2Discount;
+    
+    Solution(this.p1Start, this.p2Start, this.pairs, this.p1Moves, this.p2Moves){
+        p1End = p1Start.clone();
+        p2End = p2Start.clone();
+        p1Discount = p1Start.score;
+        p2Discount = p2Start.score;
+        applySolution();
+    }
+    
+    void applySolution(){
+        for(int index = 0; index < pairs.length && p1End.alive; index++){
+            p1End = p1End.applyMove(p1Moves[index], pairs[index]);
+            p1Discount += p1End.score * pow(.8, index);
+            if(p1End.alive == false){
+                p1Death = index;
+            }
+        }
+        
+        this.p1Eval = p1End.evaluate();
+        if(p1Death > 0){
+            this.p1Eval = -1000 + p1Death;
+        }
+        // stderr.writeln("Clock: ${sw.elapsedMilliseconds} After solution eval: ${p1Eval}");
+        // stderr.writeln("After solution score: ${p1End.score}");
+        // stderr.writeln("After solution board: ");
+        // printBoard(p1End.board);
+        
+    }
+    
+}
+
 class Player {
     List<List<Cell>> board = [];
     int score;
     num nuisancePoints;
+    int turn;
     num generatedNuisance = 0;
     bool alive = true;
-    int turn;
 
     Player(this.board, this.score, this.nuisancePoints, this.turn);
+    
+    Player clone(){
+        List<List<Cell>> newBoard = new List.generate(6, (index) =>
+            new List.from(this.board[index]));
+        
+        Player clone = new Player(newBoard, this.score, this.nuisancePoints, this.turn);
+        clone.alive = this.alive;
+        clone.generatedNuisance = this.generatedNuisance;
+        
+        return clone;
+    }
 
     int get totalBlocks => board.fold(0, (prev, element) => prev + element.length);
+    int get totalSkulls => board.fold(0, 
+        (prev, element) => prev + 
+        element.where((cell) => cell == Cell.skull).length);
 
     num evaluate(){
         if(!alive){
@@ -88,22 +170,17 @@ class Player {
         }
         int threeCount = threeConnectedCount(board);
         int twoCount = twoConnectedCount(board);
-        // Map blobs = connectedColors(board);
-        // printBoard(board);
-        // stderr.writeln(blobs);
-        // int blobThreeCount = blobs.values.where((blob) =>
-        // blob.length == 3).length;
-        // stderr.writeln("3Count $threeCount blobcount $blobThreeCount");
-
-        // assert(threeCount == blobThreeCount);
 
         return
-            twoCount * 5 +
-            threeCount * 10 +
-            (6 * 12) - this.totalBlocks +
+            twoCount * 2 +
+            threeCount * 5 +
+            this.totalBlocks * -2 +
+            totalSkulls * -3 + 
             this.generatedNuisance +
-            this.score;
+            this.score * 1;
     }
+    
+    //TODO add skull drop update method (board, int rows);
 
     Player applyMove(Move move, Pair pair){
         // stderr.writeln("Applying $move with $pair");
@@ -116,7 +193,8 @@ class Player {
         //this player's nuisance points don't change when we move
         Player updated = new Player(newBoard, newScore, this.nuisancePoints, turn);
         if(!move.isValid(this.board)){
-            stderr.writeln("Attempting to apply invalid move!");
+            // stderr.writeln("Attempting to apply invalid move $move!");
+            // printBoard(this.board);
             updated.alive = false;
             return updated;
         }
@@ -157,24 +235,24 @@ class Player {
         }
 
         //detect blobs
-        List<Point> removals = [];
+        Set<Point> removals = new Set<Point>();
         int blocksCleared = 0;
         int chainPower = 0;
         int colorBonus = 0;
         int groupBonus = 0;
 
         //stderr.writeln("Top point $top Cell ${cellAt(newBoard, top)}");
-        List<Point> topBlob = connected(newBoard, top);
+        Set<Point> topBlob = connected(newBoard, top);
         //stderr.writeln("Top Connected: $topBlob");
         if(topBlob.length > 3){
             removals.addAll(topBlob);
             blocksCleared += topBlob.length;
-            groupBonus += topBlob.length - 4;
+            groupBonus += groupBonusValue(topBlob.length);
         }
 
         if(!topBlob.contains(bottom)){
             //stderr.writeln("Bottom point $bottom Cell ${cellAt(newBoard, bottom)}");
-            List<Point> bottomBlob = connected(newBoard, bottom);
+            Set<Point> bottomBlob = connected(newBoard, bottom);
             //stderr.writeln("Bottom Connected: $bottomBlob");
             if(bottomBlob.length > 3){
                 if(removals.length > 0 && pair.top != pair.bottom){
@@ -182,37 +260,55 @@ class Player {
                 }
                 removals.addAll(bottomBlob);
                 blocksCleared += bottomBlob.length;
-                groupBonus += bottomBlob.length - 4;
+                groupBonus += groupBonusValue(bottomBlob.length);
             }
         }
 
         if(removals.length > 0 ){
-            stderr.writeln("Found blobs to remove");
-            // TODO search for skulls, add to remove list
+            removeBlobs(newBoard, removals);
 
-            //stderr.writeln("Removals $removals");
-            //mark removals
-            removals.forEach((removal) =>
-                newBoard[removal.y][removal.x] = Cell.empty
-            );
-            //remove
-            for(List<Cell> cells in newBoard){
-                for(int index = 0; index < cells.length; index++ ){
-                    if(cells[index] == Cell.empty){
-                        cells.removeAt(index);
-                        index--;
+            int scoreUpdate = 0;
+            scoreUpdate += 10 * blocksCleared *
+                min(max(1, chainPower + colorBonus + groupBonus), 999);
+
+            bool blocksRemoved = true;
+            while(blocksRemoved){
+                blocksRemoved = false;
+                var blobsToRemove = connectedColors(newBoard)
+                    .where((blob) => blob.length >= 4);
+                if(blobsToRemove.length > 0){
+                    // stderr.writeln("Another step of blobs to remove found $blobsToRemove");
+                    blocksRemoved = true;
+                    removals = new Set<Point>();
+                    blocksCleared = 0;
+                    if(chainPower == 0){
+                        chainPower = 8;
+                    } else {
+                        chainPower *= 2;
                     }
+                    groupBonus = 0;
+                    colorBonus = 0;
+                    
+                    Set<Cell> colorsRemoved = new Set<Cell>();
+                    for(Set<Point> blob in blobsToRemove){
+                        colorsRemoved.add(cellAt(newBoard, blob.first));
+                        blocksCleared += blob.length;
+                        groupBonus += groupBonusValue(blob.length);
+                        removals.addAll(blob);
+                    }
+                    
+                    colorBonus += colorBonusValue(colorsRemoved.length);
+                    
+                    removeBlobs(newBoard, removals);
+
+                    scoreUpdate += 10 * blocksCleared *
+                        min(max(1, chainPower + colorBonus + groupBonus), 999);
+
                 }
             }
 
-            //TODO fix score update logic
-            int scoreUpdate = 10 * blocksCleared *
-                max(1, chainPower + colorBonus + groupBonus);
             //stderr.writeln("Score update for move $scoreUpdate");
             updated.score += scoreUpdate;
-
-            //TODO repeat until no blobs
-
 
         }
         return updated;
@@ -221,6 +317,37 @@ class Player {
 
     void addNuisancePoints(int np){
         nuisancePoints += np;
+    }
+    
+    int groupBonusValue(int blocks){
+        if(blocks > 10){
+            return 8;
+        } else {
+            return blocks - 4;
+        }
+    }
+    
+    int colorBonusValue(int colors){
+        return [0,2,4,8,16][colors];
+    }
+    
+    void removeBlobs(List<List<Cell>> board, Set<Point> removals){
+        addRemovableSkulls(board, removals);
+        // stderr.writeln("Added skulls to remove: $removals");
+
+        //mark removals
+        removals.forEach((removal) =>
+            board[removal.y][removal.x] = Cell.empty
+        );
+        //remove
+        for(List<Cell> cells in board){
+            for(int index = 0; index < cells.length; index++ ){
+                if(cells[index] == Cell.empty){
+                    cells.removeAt(index);
+                    index--;
+                }
+            }
+        }
     }
 
 }
@@ -357,66 +484,24 @@ class Point {
     }
 }
 
-class DisJointPoints {
-    Map<Point, int> map = new Map<Point, int>();
-    Map<Point, Point> parents = new Map<Point, Point>();
-
-    void operator[]=(Point key, int value){
-        if(map.containsKey(key)){
-            map[find(key)] = value;
-        } else {
-            //add new key
-            parents[key] = key;
-            map[key] = value;
-        }
-    }
-
-    int operator[](Point key){
-        return findGroup(key);
-    }
-
-    Point find(Point point){
-        if(!parents.containsKey(point)){
-            return null;
-        }
-        if(parents[point] == point){
-            return point;
-        } else {
-            return find(parents[point]);
-        }
-    }
-
-    int findGroup(Point point){
-        return map[find(point)];
-    }
-
-    void union(Point a, Point b){
-        int group = findGroup(a);
-        Point aRoot = find(a);
-        Point bRoot = find(b);
-        parents[bRoot] = aRoot;
-    }
-
-}
-
-List<Point> validNeighbors(Point current, List<List<Cell>> board){
+List<Point> validNeighbors(List<List<Cell>> board, Point current){
     List<Point> valids = current.neighbors4.where((neighbor) =>
         neighbor.y >= 0 && neighbor.y < 6 &&
-        neighbor.x >= 0 && neighbor.x < board[neighbor.y].length
+        neighbor.x >= 0 && neighbor.x < 12
     ).toList();
     return valids;
 }
 
-List<Point> connected(List<List<Cell>> board, Point start){
+Set<Point> connected(List<List<Cell>> board, Point start){
     List<Point> open = [start];
-    List<Point> closed = [];
-    List<Point> acc = [];
+    Set<Point> closed = new Set<Point>();
+    Set<Point> acc = new Set<Point>();
     return connectedRec(board, cellAt(board, start), open, closed, acc);
 }
 
-List<Point> connectedRec(List<List<Cell>> board,
-    Cell goal, List<Point> open, List<Point> closed,
-    List<Point> acc){
+Set<Point> connectedRec(List<List<Cell>> board,
+    Cell goal, List<Point> open, Set<Point> closed,
+    Set<Point> acc){
 
     // stderr.writeln("Goal $goal open $open closed $closed acc $acc");
     if(open.isEmpty){
@@ -430,7 +515,7 @@ List<Point> connectedRec(List<List<Cell>> board,
         acc.add(current);
         closed.add(current);
         //generate neighbors and recurse
-        List<Point> valids = validNeighbors(current, board);
+        List<Point> valids = validNeighbors(board, current);
 
         for(Point valid in valids){
             if(!open.contains(valid) && !closed.contains(valid)){
@@ -528,7 +613,7 @@ Map<num, List<Move>> rankMoves(Player player){
     //SplayTreeMap iterates the keys in sorted order
     Map<num, List<Move>> rankMap = new
         SplayTreeMap<num, List<Move>>();
-    stderr.writeln("Ranking possible moves. Current eval ${player.evaluate()}");
+    // stderr.writeln("Ranking possible moves. Current eval ${player.evaluate()}");
     //apply all moves, sort by score
     List<Move> validMoves = Move.allMoves.where(
         (move) => move.isValid(player.board)).toList();
@@ -551,88 +636,24 @@ Map<num, List<Move>> rankMoves(Player player){
     return rankMap;
 }
 
-Map<int, Set<Point>> connectedColors(List<List<Cell>> board){
-    Map<int, Set<Point>> blobs = new Map<int, Set<Point>>();
-    Map<int, Set<int>> equivs = new Map<int, Set<int>>();
-    DisJointPoints groups = new DisJointPoints();
-    int groupIndex = 0;
-    //TODO scan map, build blob and equivalency list
-    //first pass
+List<Set<Point>> connectedColors(List<List<Cell>> board){
+    List<Set<Point>> blobs = new List<Set<Point>>();
+    Set<Point> allBlobbed = new Set<Point>();
     for(int row = 0; row < 6; row++){
         for(int col = 0; col < board[row].length; col++){
+            //TODO reduce duplicate scanning with closed set
             Point cp = new Point(col, row);
-            Cell current = board[row][col];
-            if(current != Cell.skull){
-                bool matchesNorth = false;
-                Point northPoint = new Point(col, row - 1);
-                bool matchesWest = false;
-                Point westPoint = new Point(col - 1, row);
-                if(row > 0 && cellAt(board, northPoint) == current){
-                    matchesNorth = true;
-                }
-                if(col > 0 && cellAt(board, westPoint) == current){
-                    matchesWest = true;
-                }
-                if(!matchesNorth && !matchesWest){
-                    //new group discovered
-                    // stderr.writeln("Creating blob group $groupIndex");
-                    blobs[groupIndex] = new Set.from([cp]);
-                    equivs[groupIndex] = new Set.from([groupIndex]);
-                    groups[cp] = groupIndex;
-                    //increment the label index
-                    groupIndex++;
-                } else if (matchesNorth && !matchesWest){
-                    int group = groups[northPoint];
-                    // stderr.writeln("Matching north blob group $group");
-                    blobs[group].add(cp);
-                    groups[cp] = group;
-                    groups.union(northPoint, cp);
-                } else if (!matchesNorth && matchesWest) {
-                    int group = groups[westPoint];
-                    // stderr.writeln("Matching west blob group $group");
-                    blobs[group].add(cp);
-                    groups[cp] = group;
-                    groups.union(westPoint, cp);
-                } else if (matchesNorth && matchesWest && groups[northPoint] == groups[westPoint]) {
-                    //current point matches north and west and they're already the same label
-                    // p p
-                    // p X
-                    int group = groups[westPoint];
-                    // stderr.writeln("Matching west and north blob group $group");
-                    blobs[group].add(cp);
-                    groups[cp] = group;
-                    groups.union(westPoint, cp);
-                } else {
-                    //current point matches north and west, but they are different labels
-                    // b p
-                    // p X
-
-                    //add to lowest label
-                    int northGroup = groups[northPoint];
-                    int westGroup = groups[westPoint];
-                    int minGroup = min(northGroup, westGroup);
-                    groups[northPoint] = minGroup;
-                    groups[westPoint] = minGroup;
-                    blobs[minGroup].add(cp);
-                    groups.union(northPoint, westPoint);
-                    groups.union(northPoint, cp);
-
-                    //update equivs
-                    // union both sets of labels together
-                    // for each group in labels, set equivs[group] to unioned list
-                    Set<int> allEquivs = new Set<int>();
-                    allEquivs.addAll(equivs[northGroup]);
-                    allEquivs.addAll(equivs[westGroup]);
-
-                    allEquivs.forEach((equiv) => equivs[equiv] = allEquivs);
-                }
+            if(allBlobbed.contains(cp) || cellAt(board, cp) == Cell.skull){
+                //already in a blob or not a color, skip it.
+                continue;
+            }
+            Set<Point> blob = connected(board, cp);
+            allBlobbed.addAll(blob);
+            if(blob.length > 1){
+                blobs.add(blob);
             }
         }
     }
-
-    //TODO second pass
-    //reduce blobs with same equivs
-
     return blobs;
 }
 
@@ -642,13 +663,20 @@ int threeConnectedCount(List<List<Cell>> board){
         for(int col = 0; col < board[row].length; col++){
             Point cp = new Point(col, row);
             Cell current = board[row][col];
-            List<Point> valids = validNeighbors(cp, board);
+            List<Point> valids = validNeighbors(board, cp);
             // stderr.writeln("$cp $current $valids");
             // valids.forEach((valid) => stderr.writeln("$valid ${cellAt(board, valid)}"));
-            if(current != Cell.empty &&
-            current != Cell.skull &&
-            valids.where((valid) => cellAt(board, valid) == current).length == 2){
-                threeCount++;
+            if(current != Cell.empty && current != Cell.skull) {
+                var group = valids.where((valid) => cellAt(board, valid) == current).toList();
+                group.add(cp);
+                
+                if(group.length == 3){  
+                    int emptyNeighbors = group.expand((point) => 
+                    validNeighbors(board, point)
+                    .map((mappoint) => cellAt(board, mappoint)))
+                    .where((cell) => cell == Cell.empty).length;
+                        threeCount += emptyNeighbors;
+                }
             }
         }
     }
@@ -661,7 +689,7 @@ int twoConnectedCount(List<List<Cell>> board){
         for(int col = 0; col < board[row].length; col++){
             Point cp = new Point(col, row);
             Cell current = board[row][col];
-            List<Point> valids = validNeighbors(cp, board);
+            List<Point> valids = validNeighbors(board, cp);
             if(current != Cell.empty &&
             current != Cell.skull &&
             valids.where((valid) => cellAt(board, valid) == current).length == 1){
@@ -670,4 +698,45 @@ int twoConnectedCount(List<List<Cell>> board){
         }
     }
     return twoCount;
+}
+
+void addRemovableSkulls(List<List<Cell>> board, Set<Point> removals){
+    Set<Point> skulls = new Set<Point>();
+    for(int row = 0; row < 6; row++){
+        for(int col = 0; col < board[row].length; col++){
+            Point cp = new Point(col, row);
+            if(board[row][col] == Cell.skull && 
+                validNeighbors(board, cp).any((nbr) => removals.contains(nbr))){
+                skulls.add(cp);
+            }
+        }
+    }
+    removals.addAll(skulls);
+}
+
+Solution findSolution(Player me, Player opp, List<Pair> pairs){
+    
+    Solution current = new Solution(me, opp, pairs, 
+        randomMoves(pairs),
+        randomMoves(pairs));
+    
+    while(sw.elapsedMilliseconds < TIMEOUT){
+        Solution newSol = new Solution(me, opp, pairs, 
+            randomMoves(pairs),
+            randomMoves(pairs));
+        if(newSol.p1Discount  + newSol.p1Eval > 
+            current.p1Discount + current.p1Eval){
+            current = newSol;
+        }
+    }
+    stderr.writeln("Returning solution with eval ${current.p1Eval}");
+    
+    return current;
+        
+}
+
+List<Move> randomMoves(pairs){
+    return new List.generate(pairs.length, (index) =>
+        pairs[index].allMoves()[rand.nextInt(
+            pairs[index].allMoves().length)]);
 }
