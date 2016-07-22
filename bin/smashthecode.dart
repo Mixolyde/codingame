@@ -12,7 +12,8 @@ List inputs;
 List<Pair> pairs = [];
 int TURN_LIMIT = 200;
 int turn = 0;
-int TIMEOUT = 80;
+int TIMEOUT = 85;
+List<Move> lastMoves = [];
 
 //timer class
 Stopwatch sw = new Stopwatch();
@@ -54,9 +55,14 @@ void main() {
                 }
             }
         }
+        
+        num myNuisance = (score2 % (70 * 6)) / 70;
+        num oppNuisance = (score1 % (70 * 6)) / 70;
+        
+        stderr.writeln("My N $myNuisance Opp N $oppNuisance");
 
-        me = new Player(myBoard, score1, 0, turn);
-        opp = new Player(oppBoard, score2, 0, turn);
+        me = new Player(myBoard, score1, myNuisance, turn);
+        opp = new Player(oppBoard, score2, oppNuisance, turn);
 
         sw = new Stopwatch();
         sw.start();
@@ -66,21 +72,22 @@ void main() {
         printBoard(myBoard);
 
         //single depth ranking until depthEval works
-        Map rankMap = rankMoves(me);
-        stderr.writeln("Rankmap $rankMap");
-        List<Move> bestMoves = rankMap[rankMap.keys.last];
-        Move move = bestMoves[rand.nextInt(bestMoves.length)];
+        // Map rankMap = rankMoves(me);
+        // stderr.writeln("Rankmap $rankMap");
+        // List<Move> bestMoves = rankMap[rankMap.keys.last];
+        // Move move = bestMoves[rand.nextInt(bestMoves.length)];
 
-        Solution sol = findSolution(me, opp, pairs.take(5).toList());
+        Solution sol = findSolution(me, opp, pairs.take(7).toList());
         Move solMove = sol.p1Moves.first;
+        lastMoves = sol.p1Moves;
 
-        if(rankMap.keys.last > sol.p1Eval){
-            stderr.writeln("Chose single-depth move $move");
-            print("${move.col} ${move.rot}");
-        } else {
-            stderr.writeln("Chose solution move $solMove");
+        // if(rankMap.keys.last > sol.p1Eval){
+        //     stderr.writeln("Chose single-depth move $move");
+        //     print("${move.col} ${move.rot}");
+        // } else {
+        //     stderr.writeln("Chose solution move $solMove");
             print("${solMove.col} ${solMove.rot}");
-        }
+        // }
 
         turn++;
         turn++;
@@ -119,7 +126,7 @@ class Solution{
     void applySolution(){
         for(int index = 0; index < pairs.length && p1End.alive; index++){
             p1End = p1End.applyMove(p1Moves[index], pairs[index]);
-            p1Discount += p1End.score * pow(.8, index);
+            p1Discount += p1End.evaluate() * pow(.7, index);
             if(p1End.alive == false){
                 p1Death = index;
             }
@@ -129,10 +136,6 @@ class Solution{
         if(p1Death > 0){
             this.p1Eval = -1000 + p1Death;
         }
-        // stderr.writeln("Clock: ${sw.elapsedMilliseconds} After solution eval: ${p1Eval}");
-        // stderr.writeln("After solution score: ${p1End.score}");
-        // stderr.writeln("After solution board: ");
-        // printBoard(p1End.board);
 
     }
 
@@ -145,6 +148,8 @@ class Player {
     int turn;
     num generatedNuisance = 0;
     bool alive = true;
+    
+    num eval = -1;
 
     Player(this.board, this.score, this.nuisancePoints, this.turn);
 
@@ -165,19 +170,30 @@ class Player {
         element.where((cell) => cell == Cell.skull).length);
 
     num evaluate(){
-        if(!alive){
-            return double.NEGATIVE_INFINITY;
+        if(eval != -1){
+            return eval;
         }
-        int threeCount = threeConnectedCount(board);
-        int twoCount = twoConnectedCount(board);
+        if(!alive){
+            eval = double.NEGATIVE_INFINITY;
+            return eval;
+        }
+        var counts = connectedCounts(board);
+        int heightDiffs =
+            (board[0].length - board[1].length).abs() +
+            (board[1].length - board[2].length).abs() +
+            (board[2].length - board[3].length).abs() +
+            (board[3].length - board[4].length).abs() +
+            (board[4].length - board[5].length).abs();
 
-        return
-            twoCount * 2 +
-            threeCount * 5 +
-            this.totalBlocks * -2 +
-            totalSkulls * -3 +
-            this.generatedNuisance +
-            this.score * 1;
+        eval =
+            heightDiffs * 1 +
+            counts[0] * 2 +
+            counts[1] * 4 +
+            this.totalBlocks * -4 +
+            this.totalSkulls * -10 +
+            this.generatedNuisance * 10 +
+            this.score * 0;
+        return eval;
     }
 
     //TODO add skull drop update method (board, int rows);
@@ -311,6 +327,7 @@ class Player {
             updated.score += scoreUpdate;
 
         }
+        updated.generatedNuisance = (updated.score - this.score) / 70;
         return updated;
 
     }
@@ -381,15 +398,16 @@ class Move {
     String toString() { return "{$col,$rot}"; }
 
     bool isValid(List<List<Cell>> board){
-        List<int> heights = allHeights(board);
         switch (rot){
             case 1:
             case 3:
-                return heights[col] < 11;
+                return board[col].length < 11;
             case 0:
-                return heights[col] < 12 && heights[col + 1] < 12;
+                return board[col].length < 12 
+                    && board[col + 1].length < 12;
             case 2:
-                return heights[col] < 12 && heights[col - 1] < 12;
+                return board[col].length < 12 
+                    && board[col - 1].length < 12;
             default:
                 return true;
         }
@@ -657,47 +675,24 @@ List<Set<Point>> connectedColors(List<List<Cell>> board){
     return blobs;
 }
 
-int threeConnectedCount(List<List<Cell>> board){
-    int threeCount = 0;
+List<int> connectedCounts(List<List<Cell>> board){
+    List<int> counts = [0, 0];
     for(int row = 0; row < 6; row++){
         for(int col = 0; col < board[row].length; col++){
-            Point cp = new Point(col, row);
             Cell current = board[row][col];
-            List<Point> valids = validNeighbors(board, cp);
-            // stderr.writeln("$cp $current $valids");
-            // valids.forEach((valid) => stderr.writeln("$valid ${cellAt(board, valid)}"));
-            if(current != Cell.empty && current != Cell.skull) {
-                var group = valids.where((valid) => cellAt(board, valid) == current).toList();
-                group.add(cp);
-
-                if(group.length == 3){
-                    int emptyNeighbors = group.expand((point) =>
-                    validNeighbors(board, point)).toSet()
-                    .map((mappoint) => cellAt(board, mappoint))
-                    .where((cell) => cell == Cell.empty).length;
-                        threeCount += emptyNeighbors;
+            if(current != Cell.empty && current != Cell.skull){
+                Point cp = new Point(col, row);
+                List<Point> valids = validNeighbors(board, cp);
+                var group = valids.where((valid) => cellAt(board, valid) == current);
+                if(group.length == 1){
+                    counts[0]++;
+                } else if (group.length == 2){
+                    counts[1]++;
                 }
             }
         }
     }
-    return threeCount;
-}
-
-int twoConnectedCount(List<List<Cell>> board){
-    int twoCount = 0;
-    for(int row = 0; row < 6; row++){
-        for(int col = 0; col < board[row].length; col++){
-            Point cp = new Point(col, row);
-            Cell current = board[row][col];
-            List<Point> valids = validNeighbors(board, cp);
-            if(current != Cell.empty &&
-            current != Cell.skull &&
-            valids.where((valid) => cellAt(board, valid) == current).length == 1){
-                twoCount++;
-            }
-        }
-    }
-    return twoCount;
+    return counts;
 }
 
 void addRemovableSkulls(List<List<Cell>> board, Set<Point> removals){
@@ -715,21 +710,31 @@ void addRemovableSkulls(List<List<Cell>> board, Set<Point> removals){
 }
 
 Solution findSolution(Player me, Player opp, List<Pair> pairs){
+    int simCount = 0;
+    //start with last turn's moves
+    if(lastMoves.isNotEmpty){
+        lastMoves.removeAt(0);
+        lastMoves.add(pairs[lastMoves.length].allMoves()[rand.nextInt(
+                pairs[lastMoves.length].allMoves().length)]);
+    } else {
+        lastMoves = randomMoves(pairs);
+    }
 
     Solution current = new Solution(me, opp, pairs,
-        randomMoves(pairs),
+        lastMoves,
         randomMoves(pairs));
 
     while(sw.elapsedMilliseconds < TIMEOUT){
         Solution newSol = new Solution(me, opp, pairs,
             randomMoves(pairs),
             randomMoves(pairs));
-        if(newSol.p1Discount  + newSol.p1Eval >
-            current.p1Discount + current.p1Eval){
+        if(newSol.p1Discount > //  + newSol.p1Eval >
+            current.p1Discount){ // + current.p1Eval){
             current = newSol;
         }
+        simCount++;
     }
-    stderr.writeln("Returning solution with eval ${current.p1Eval}");
+    stderr.writeln("$simCount sims, returning eval ${current.p1Eval}");
 
     return current;
 

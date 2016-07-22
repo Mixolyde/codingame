@@ -147,11 +147,12 @@ void main() {
     });
   });
 
-  group('threeConnectedCount:', () {
+  group('connectedCounts:', () {
     test('empty board', () {
       var board = getEmptyBoard();
-      int result = threeConnectedCount(board);
-      expect(result, 0);
+      var result = connectedCounts(board);
+      expect(result[0], 0);
+      expect(result[1], 0);
     });
     test('6 pairs', () {
       var board = getEmptyBoard();
@@ -161,8 +162,9 @@ void main() {
       board[3] = new List.filled(2, Cell.green);
       board[4] = new List.filled(2, Cell.pink);
       board[5] = new List.filled(2, Cell.red);
-      int result = threeConnectedCount(board);
-      expect(result, 0);
+      var result = connectedCounts(board);
+      expect(result[0], 12);
+      expect(result[1], 0);
     });
     test('1 and 2', () {
       var board = getEmptyBoard();
@@ -170,10 +172,11 @@ void main() {
       //r r
       board[0] = new List.filled(1, Cell.red);
       board[1] = new List.filled(2, Cell.red);
-      printBoard(board);
+      //printBoard(board);
 
-      int result = threeConnectedCount(board);
-      expect(result, 4);
+      var result = connectedCounts(board);
+      expect(result[0], 2);
+      expect(result[1], 1);
     });
     test('2 and 1', () {
       var board = getEmptyBoard();
@@ -181,10 +184,11 @@ void main() {
       //r
       board[0] = new List.filled(2, Cell.red);
       board[1] = new List.filled(1, Cell.red);
-      printBoard(board);
+      //printBoard(board);
 
-      int result = threeConnectedCount(board);
-      expect(result, 3);
+      var result = connectedCounts(board);
+      expect(result[0], 2);
+      expect(result[1], 1);
     });
   });
 
