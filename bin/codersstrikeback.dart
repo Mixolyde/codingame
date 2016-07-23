@@ -12,6 +12,7 @@ List<int> lapCounts = [0, 0];
 void main() {
     List inputs;
     int laps = int.parse(stdin.readLineSync());
+    stderr.writeln("Laps $laps");
     int cpCount = int.parse(stdin.readLineSync());
 
     for(int i = 0; i < cpCount; i++){
@@ -305,6 +306,9 @@ class Pod extends Unit {
             this.vx, this.vy, this.angle, this.nextCP);
         clone.timeout = this.timeout;
         clone.shield = this.shield;
+        clone.partner = this.partner;
+
+        return clone;
     }
 
     num getAngle(Point p) {
@@ -396,11 +400,12 @@ class Pod extends Unit {
         this.end();
     }
 
-    void bounce(Unit u) {
-        if (u is Checkpoint) {
+    void bounce(Unit unit) {
+        if (Unit is Checkpoint) {
             // Collision with a checkpoint
-            this.bounceWithCheckpoint(u as Checkpoint);
+            this.bounceWithCheckpoint(unit);
         } else {
+            Pod u = unit as Pod;
             // If a pod has its shield active its mass is 10 otherwise it's 1
             num m1 = this.shield ? 10 : 1;
             num m2 = u.shield ? 10 : 1;
