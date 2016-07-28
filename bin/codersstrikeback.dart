@@ -80,16 +80,28 @@ void main() {
         // You have to output the target position
         // followed by the power (0 <= thrust <= 100)
         // i.e.: "x y thrust"
+        
+        if(turn == 0 && pods[0].distance2(checkpoints[1]) > 4000 * 4000){
+            print("${checkpoints[1].x} ${checkpoints[1].y} BOOST");
+            print("${checkpoints[1].x} ${checkpoints[1].y} BOOST");
+            
+        } else {
+            
+            int solLength = 6;
+            
+            //monte carlo the enemy players for a bit
+            List<Pod> enemiesFirst = [pods[2], pods[3], pods[0], pods[1]];
+            Solution enemySol = genetic(enemiesFirst, solLength, 15, null, null);
+            
 
-        Solution gen = genetic(pods, 6, 95, lastSolution);
-        
-        stderr.writeln("Genetic eval: ${gen.score(pods)}");
-        
-        stderr.writeln("Move 0 ${gen.moves0[0]}");
-        stderr.writeln("Move 1 ${gen.moves1[0]}");
-        
-        pods[0].output(gen.moves0[0]);
-        pods[1].output(gen.moves1[0]);
+            Solution gen = genetic(pods, solLength, 95, lastSolution, enemySol);
+            lastSolution = gen;
+            
+            // stderr.writeln("Genetic eval: ${gen.score(pods)}");
+            
+            pods[0].output(gen.moves0[0]);
+            pods[1].output(gen.moves1[0]);
+        }
         
         [0, 1, 2, 3].forEach((index) {
             pods[index].timeout -= 1;
@@ -107,65 +119,6 @@ void main() {
                 }
             }
         });
-        
-
-        // [0, 1].forEach((index) {
-        //     Point nextCP = checkpoints[pods[index].nextCP];
-        //     //calc outer point on next checkpoint
-        //     //vector from previous to next next cp
-        //     int prevCPid = pods[index].nextCP - 1;
-        //     if(prevCPid < 0 ){ prevCPid = cpCount - 1; }
-        //     int nextNextCPid = pods[index].nextCP + 1;
-        //     if(nextNextCPid >= cpCount  ){ nextNextCPid = 0; }
-            
-        //     num dx = checkpoints[prevCPid].x - checkpoints[nextNextCPid].x;
-        //     num dy = checkpoints[prevCPid].y - checkpoints[nextNextCPid].y; 
-        //     num length = sqrt(dx * dx + dy * dy);
-        //     num scaleddx = (490 / length) * dx;
-        //     num scaleddy = (490 / length) * dy;
-        //     // Point target = new Point(
-        //     //     nextCP.x - pods[index].vx * 3,
-        //     //     nextCP.y - pods[index].vy * 3);
-        //     Point target = new Point(
-        //         nextCP.x + scaleddx.round() - pods[index].vx * 3,
-        //         nextCP.y + scaleddy.round() - pods[index].vy * 3);
-        //     bool shield = false;
-        //     Collision col1 = pods[index].collision(pods[2]);
-        //     Collision col2 = pods[index].collision(pods[3]);
-        //     // Collision col3 = pods[index].collision(checkpoints[pods[index].nextCP]);
-        //     if(col1 != null || col2 != null){
-        //         shield = true;
-        //     }
-            
-        //     num nextCheckpointAngle = pods[index].diffAngle(target);
-        //     num nextCheckpointDist2 = pods[index].distance2(target);
-        //     stderr.writeln("$index Next CP angle: $nextCheckpointAngle");
-        //     stderr.writeln("$index Next CP Dist2: $nextCheckpointDist2");
-            
-            
-        //     if(shield){
-        //         print("${target.x} ${target.y} SHIELD SHIELDS UP!");
-        //     // } else if (col3 != null){
-        //     //     //going to collide with next CP next turn
-        //     //     Point nextNextCP = checkpoints[nextNextCPid];
-        //     //     print("${nextNextCP.x} ${nextNextCP.y} 100");
-                
-        //     } else if(!pods[index].boostUsed &&
-        //         nextCheckpointAngle.abs() < 2 &&
-        //         nextCheckpointDist2 > (6000 * 6000)){
-        //         pods[index].boostUsed = true;
-        //         print("${target.x} ${target.y} BOOST BOOSTERS ENGAGED!");
-        //     } else if(nextCheckpointAngle.abs() > 20){
-        //          int thrust = thrustSigmoid(nextCheckpointAngle);
-        //          print("${target.x} ${target.y} 20");
-        //     } else if( nextCheckpointDist2 < 700 * 700){
-        //         print("${target.x} ${target.y} 50");
-        //     } else if( nextCheckpointDist2 < 650 * 650){
-        //         print("${target.x} ${target.y} 30");
-        //     } else {
-        //         print("${target.x} ${target.y} 100");
-        //     }
-        // });
 
         turn++;
     }
@@ -933,39 +886,82 @@ Solution monteCarlo(List<Pod> startPods, int length, int timeout){
     return bestSolution;
 }
 
-Solution genetic(List<Pod> startPods, int length, int timeout, Solution lastSolution){
+Solution genetic(List<Pod> startPods, int length, 
+    int timeout, Solution lastSolution, Solution enemySol){
     int poolSize = 10;
+    List<Move> moves2;
+    List<Move> moves3;
     
     Stopwatch sw = new Stopwatch();
     sw.start();
+    
     Solution naive = naiveSolution(startPods, length);
+    if(enemySol != null){
+        naive.moves2 = enemySol.moves2;
+        naive.moves3 = enemySol.moves3;
+        moves2 = enemySol.moves2;
+        moves3 = enemySol.moves3;
+    } else {
+        moves2 = naive.moves2;
+        moves3 = naive.moves3;
+    }
     
     Map<num, Solution> pool = new SplayTreeMap();
     num naiveEval = naive.score(startPods);
     pool[naiveEval] = naive;
-    stderr.writeln("Created naive $naiveEval ${sw.elapsedMilliseconds}");
-    
+    // stderr.writeln("Created naive $naiveEval ${sw.elapsedMilliseconds}");
+    if(lastSolution != null){
+        Solution updateLast = lastSolution.clone();
+        //remove last turn's moves
+        updateLast.moves0.removeAt(0);
+        updateLast.moves1.removeAt(0);
+        //add random ones
+        updateLast.moves0.add(randomMove());
+        updateLast.moves1.add(randomMove());
+        
+        //replace enemy moves
+        updateLast.moves2 = moves2;
+        updateLast.moves3 = moves3;
+        
+        num updateEval = updateLast.score(startPods);
+        pool[updateEval] = updateLast;
+    }
     
     for(int i = 0; i < poolSize; i++){
         Solution randomSolution = new Solution(
             new List.generate(length, (index) => randomMove()),
             new List.generate(length, (index) => randomMove()),
-            naive.moves2,
-            naive.moves3);
+            moves2,
+            moves3);
         num randomEval = randomSolution.score(startPods);
         //stderr.writeln("${pool.length} $poolSize Random eval $randomEval");
         pool[randomEval] = randomSolution;
     }
     
-    stderr.writeln("Filled pool ${pool.length} ${sw.elapsedMilliseconds}");
-    stderr.writeln("Pool first ${pool.keys.first} last ${pool.keys.last}");
+    // stderr.writeln("Filled pool ${pool.length} ${sw.elapsedMilliseconds}");
+    stderr.writeln("Start Pool first ${pool.keys.first} last ${pool.keys.last}");
     
     while(sw.elapsedMilliseconds < timeout){
         // stderr.writeln("Creating GAs ${sw.elapsedMilliseconds}");
-        //TODO generate new solution with mutation and crossover
+        
+        Solution mutatedSolution;
+        if(rand.nextDouble() < .5 || pool.length < 2){
+            //mutation
+            mutatedSolution = pool[pool.keys.toList()[rand.nextInt(pool.length)]].clone();
+            mutatedSolution.mutate();
             
-        Solution mutatedSolution = pool[pool.keys.toList()[rand.nextInt(pool.length)]].clone();
-        mutatedSolution.mutate();
+        } else {
+            //crossover
+            int a = rand.nextInt(pool.length);
+            int b = a + rand.nextInt(pool.length - 1);
+            if(b >= pool.length){
+                b -= pool.length;
+            }
+            Solution mother = pool[pool.keys.toList()[a]];
+            Solution father = pool[pool.keys.toList()[b]];
+            mutatedSolution = crossover(mother, father);
+            
+        }
         
         num geneticEval = mutatedSolution.score(startPods);
         if( geneticEval > pool.keys.first && !pool.containsKey(geneticEval)){
@@ -974,9 +970,7 @@ Solution genetic(List<Pod> startPods, int length, int timeout, Solution lastSolu
             pool.remove(pool.keys.first);
         }
     }
-    stderr.writeln("Returning best of ${pool.length} ${sw.elapsedMilliseconds}");
-    stderr.writeln("Pool first ${pool.keys.first} last ${pool.keys.last}");
-    stderr.writeln("last key ${pool.keys.last} eval ${pool[pool.keys.last].score(startPods)}");
+    stderr.writeln("End Pool first ${pool.keys.first} last ${pool.keys.last}");
    
     return pool[pool.keys.last];
     
@@ -1019,4 +1013,35 @@ List<Pod> clonePods(List<Pod> startPods){
     pods[3].partner = pods[2];
     
     return pods;
+}
+
+List<Pod> swapPods(List<Pod> startPods){
+    List<Pod> pods = [];
+    pods.add(startPods[2]);
+    pods.add(startPods[3]);
+    pods.add(startPods[0]);
+    pods.add(startPods[1]);
+    return pods;
+}
+
+Solution crossover(Solution mother, Solution father){
+    List<Move> moves0 = [];
+    List<Move> moves1 = [];    
+    for(int i = 0; i < mother.moves0.length; i++){
+        if(rand.nextDouble() < .5){
+            moves0.add(mother.moves0[i]);
+        } else {
+            moves0.add(father.moves0[i]);
+        }
+        if(rand.nextDouble() < .5){
+            moves1.add(mother.moves1[i]);
+        } else {
+            moves1.add(father.moves1[i]);
+        }
+    }
+    
+    //assume that enemy moves are the same in both parents
+    return new Solution(moves0, moves1, 
+        mother.moves2,
+        mother.moves3);
 }
