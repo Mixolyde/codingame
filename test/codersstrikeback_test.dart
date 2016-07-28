@@ -61,7 +61,7 @@ void main() {
       expect(a.id, 1);
       expect(a.x, 4);
       expect(a.y, 5);
-      expect(a.radius, 600);
+      expect(a.radius, 100);
     });
   });
 }

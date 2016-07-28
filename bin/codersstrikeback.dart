@@ -845,7 +845,7 @@ void play(List<Pod> pods, List<Checkpoint> checkpoints) {
     }
 }
 
-void test(List<Pod> pods, List<Checkpoint> checkpoints) {
+void testPlay(List<Pod> pods, List<Checkpoint> checkpoints) {
     for (int i = 0; i < pods.length; ++i) {
         pods[i].rotate(new Point(8000, 4500));
         pods[i].boost(100);
