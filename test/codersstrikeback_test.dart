@@ -61,7 +61,66 @@ void main() {
       expect(a.id, 1);
       expect(a.x, 4);
       expect(a.y, 5);
-      expect(a.radius, 100);
+      expect(a.radius, 200);
     });
+  });
+  group('collisions:', (){
+    test('no collision', (){
+      Pod a= new Pod(0, 0, 0, 0, 0, 0, 0);
+
+      Checkpoint cp = new Checkpoint(1, 601, 0);
+
+      Collision col = a.collision(cp);
+      expect(col, null);
+
+    });
+    test('t=0 collision', (){
+      Pod a= new Pod(0, 0, 0, 0, 0, 0, 0);
+
+      Checkpoint cp = new Checkpoint(1, 599, 0);
+
+      Collision col = a.collision(cp);
+      expect(col.t, 0);
+
+    });
+    test('t=0.5 collision', (){
+      Pod a= new Pod(0, 0, 0, 1000, 0, 0, 0);
+
+      Checkpoint cp = new Checkpoint(1, 1100, 0);
+
+      Collision col = a.collision(cp);
+      expect(col.t, 0.5);
+
+    });
+    test('t=0.5 collision at angle', (){
+      Pod a= new Pod(0, 0, 0, 1000, 0, 0, 0);
+
+      Checkpoint cp = new Checkpoint(1, 500, 599.999);
+
+      Collision col = a.collision(cp);
+      expect(col.t, lessThanOrEqualTo(0.5));
+      expect(col.t, greaterThanOrEqualTo(0.47));
+
+    });
+    test('moving wrong way', (){
+      Pod a= new Pod(0, 0, 0, -1000, 0, 0, 0);
+
+      Checkpoint cp = new Checkpoint(1, 500, -599.99);
+
+      Collision col = a.collision(cp);
+      expect(col, null);
+
+    });
+    test('not fast enough', (){
+      Pod a= new Pod(0, 0, 0, 100, 0, 0, 0);
+
+      Checkpoint cp = new Checkpoint(1, 500, -599.99);
+
+      Collision col = a.collision(cp);
+      expect(col, null);
+
+    });
+
+
   });
 }

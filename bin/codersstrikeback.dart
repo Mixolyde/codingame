@@ -19,7 +19,7 @@ void main() {
     List inputs;
     int laps = int.parse(stdin.readLineSync());
     cpCount = int.parse(stdin.readLineSync());
-    
+
     cpGoal = laps * cpCount;
     stderr.writeln("Laps $laps CPs $cpCount Goal: $cpGoal");
 
@@ -41,10 +41,10 @@ void main() {
                 pods[index] = new Pod(index, inputs[0], inputs[1],
                     inputs[2], inputs[3], inputs[4], inputs[5]);
             }
-            
+
             pods[0].partner = pods[1];
             pods[1].partner = pods[0];
-    
+
             pods[2].partner = pods[3];
             pods[3].partner = pods[2];
         } else {
@@ -58,7 +58,7 @@ void main() {
                 pods[index].angle = inputs[4];
                 pods[index].nextCP = inputs[5];
             }
-            
+
         }
 
 
@@ -69,7 +69,7 @@ void main() {
                 pods[index].timeout = 100;
                 pods[index].partner.timeout = 100;
             }
-            
+
             lastCPs[index] = pods[index].nextCP;
         });
 
@@ -80,36 +80,36 @@ void main() {
         // You have to output the target position
         // followed by the power (0 <= thrust <= 100)
         // i.e.: "x y thrust"
-        
+
         if(turn == 0 && pods[0].distance2(checkpoints[1]) > 4000 * 4000){
             print("${checkpoints[1].x} ${checkpoints[1].y} BOOST");
             print("${checkpoints[1].x} ${checkpoints[1].y} BOOST");
-            
+
         } else {
-            
+
             int solLength = 6;
-            
+
             //monte carlo the enemy players for a bit
             List<Pod> enemiesFirst = [pods[2], pods[3], pods[0], pods[1]];
             Solution enemySol = genetic(enemiesFirst, solLength, 15, null, null);
-            
+
 
             Solution gen = genetic(pods, solLength, 95, lastSolution, enemySol);
             lastSolution = gen;
-            
+
             // stderr.writeln("Genetic eval: ${gen.score(pods)}");
-            
+
             pods[0].output(gen.moves0[0]);
             pods[1].output(gen.moves1[0]);
         }
-        
+
         [0, 1, 2, 3].forEach((index) {
             pods[index].timeout -= 1;
         });
-        
+
         [0, 1].forEach((index) {
             Pod pod = pods[index];
-        
+
             if(pod.shield){
                 if(pod.shieldTimeout <= 0){
                     pod.shield = false;
@@ -218,7 +218,8 @@ abstract class Unit extends Point {
         // We take everything squared to avoid calling sqrt uselessly. It is better for performances
 
         if (dist < sr) {
-            // Objects are already touching each other. We have an immediate collision.
+            // Objects are already touching each other. We have an immediate
+            // collision.
             return new Collision(this, u, 0.0);
         }
 
@@ -227,7 +228,8 @@ abstract class Unit extends Point {
             return null;
         }
 
-        // We place ourselves in the reference frame of u. u is therefore stationary and is at (0,0)
+        // We place ourselves in the reference frame of u. u is therefore
+        // stationary and is at (0,0)
         num x = this.x - u.x;
         num y = this.y - u.y;
         Point myp = new Point(x, y);
@@ -242,11 +244,11 @@ abstract class Unit extends Point {
         num pdist = up.distance2(p);
 
         // Square of the distance between us and that point
-        num mypdist = this.distance2(p);
+        num mypdist = myp.distance2(p);
 
         // If the distance between u and this line is less than the sum of the radii, there might be a collision
         if (pdist < sr) {
-         // Our speed on the line
+            // Our speed on the line
             num length = sqrt(vx*vx + vy*vy);
 
             // We move along the line to find the point of impact
@@ -254,8 +256,9 @@ abstract class Unit extends Point {
             p.x = p.x - backdist * (vx / length);
             p.y = p.y - backdist * (vy / length);
 
-            // If the point is now further away it means we are not going the right way, therefore the collision won't happen
-            if (this.distance2(p) > mypdist) {
+            // If the point is now further away it means we are not going
+            // the right way, therefore the collision won't happen
+            if (myp.distance2(p) > mypdist) {
                 return null;
             }
 
@@ -267,7 +270,7 @@ abstract class Unit extends Point {
             }
 
             // Time needed to reach the impact point
-            num t = dist / length;
+            num t = pdist / length;
 
             return new Collision(this, u, t);
         }
@@ -379,7 +382,7 @@ class Pod extends Unit {
         this.x += this.vx * t;
         this.y += this.vy * t;
     }
-    
+
     void activateShield(){
         shield = true;
         shieldTimeout = 3;
@@ -394,7 +397,7 @@ class Pod extends Unit {
 
         // Don't forget that the timeout goes down by 1 each turn. It is reset to 100 when you pass a checkpoint
         this.timeout -= 1;
-        
+
         if(shield){
             if(this.shieldTimeout <= 0){
                 shield = false;
@@ -471,7 +474,7 @@ class Pod extends Unit {
         }
 
     }
-    
+
     void apply(Move move){
         //apply the angle change and thrust, but don't move
         num a = move.angle;
@@ -481,7 +484,7 @@ class Pod extends Unit {
         if(a > 18){
             a = 18;
         }
-        
+
         this.angle += a;
 
         // The % operator is slow. If we can avoid it, it's better.
@@ -490,23 +493,23 @@ class Pod extends Unit {
         } else if (this.angle < 0.0) {
             this.angle += 360.0;
         }
-        
+
         if(move.thrust >= 0){
             this.boost(move.thrust);
         } else if (!shield) {
             this.activateShield();
         }
     }
-    
+
     void output(Move move) {
         num a = angle + move.angle;
-    
+
         if (a >= 360.0) {
             a = a - 360.0;
         } else if (a < 0.0) {
             a += 360.0;
         }
-    
+
         // Look for a point corresponding to the angle we want
         // Multiply by 10000.0 to limit rounding errors
         a = a * PI / 180.0;
@@ -520,15 +523,15 @@ class Pod extends Unit {
             print("${px.round()} ${py.round()} ${move.thrust}");
         }
     }
-    
+
     num score() {
         return checked*50000 - this.distance(checkpoints[this.nextCP]);
-    }    
+    }
 }
 
 class Checkpoint extends Unit {
     Checkpoint(num id, num x, num y) : super(id, x, y, 0, 0){
-        radius = 100;
+        radius = 200;
     }
 
     int get hashCode {
@@ -564,13 +567,13 @@ class Collision {
     Collision(this.a, this.b, this.t);
 
     String toString() { return "$a will collide $b at time $t"; }
-    
+
     bool ignorable(Collision other) {
         return other.t == 0 &&
         ((a.id == other.a.id && b.id == other.b.id) ||
          (a.id == other.b.id && b.id == other.a.id));
     }
-    
+
     int get hashCode {
         int result = 17;
         result = 37 * result + a.id + b.id;
@@ -583,7 +586,7 @@ class Collision {
     bool operator ==(other) {
         if (other is! Collision) return false;
         Collision col = other;
-        return col.t == t && 
+        return col.t == t &&
             ((col.a.id == a.id && col.b.id == b.id) ||
              (col.b.id == a.id && col.a.id == b.id) );
     }
@@ -592,47 +595,47 @@ class Collision {
 class Move {
     num angle; //damped to -18.0 to 18
     int thrust; //damped to -1 to 100 (-1 means activate shield)
-    
+
     double SHIELD_PROB = .05;
-    
+
     Move(this.angle, this.thrust);
-    
+
     String toString() => "Move: ${angle.truncate()} $thrust";
-    
+
     Move clone() => new Move(this.angle, this.thrust);
-    
+
     bool get shield => thrust < 0;
-        
+
     void mutate(num amplitude) {
         num ramin = this.angle - 36.0 * amplitude;
         num ramax = this.angle + 36.0 * amplitude;
-    
+
         if (ramin < -18.0) {
             ramin = -18.0;
         }
-    
+
         if (ramax > 18.0) {
             ramax = 18.0;
         }
-    
+
         angle = rand.nextDouble() * (ramax - ramin) + ramin;
-    
+
         if (!this.shield && rand.nextDouble() < SHIELD_PROB) {
             this.thrust = -1;
         } else {
             int pmin = this.thrust - (100 * amplitude).truncate();
             int pmax = this.thrust + (100 * amplitude).truncate();
-    
+
             if (pmin < 0) {
                 pmin = 0;
             }
-    
+
             if (pmax > 0) {
                 pmax = 100;
             }
-    
+
             this.thrust = rand.nextInt(pmax - pmin) + pmin;
-    
+
             // this.shield = false;
         }
     }
@@ -643,41 +646,41 @@ class Solution {
     List<Move> moves1;
     List<Move> moves2;
     List<Move> moves3;
-    
+
     num MOVE_MUTATE_RATE = .5;
-    
-    
+
+
     Solution(this.moves0, this.moves1, this.moves2, this.moves3);
-    
+
     Solution clone() =>
         new Solution(
-            moves0.map((move) => move.clone()).toList(), 
-            moves1.map((move) => move.clone()).toList(), 
-            moves2.map((move) => move.clone()).toList(), 
+            moves0.map((move) => move.clone()).toList(),
+            moves1.map((move) => move.clone()).toList(),
+            moves2.map((move) => move.clone()).toList(),
             moves3.map((move) => move.clone()).toList()
             );
-    
+
     num score(List<Pod> startPods) {
         var pods = clonePods(startPods);
-        
+
         // Play out the turns
         for (int i = 0; i < moves0.length; ++i) {
             // Apply the moves to the pods before playing
-            
+
             pods[0].apply(moves0[i]);
             pods[1].apply(moves1[i]);
             pods[2].apply(moves2[i]);
             pods[3].apply(moves3[i]);
-    
+
             play(pods, checkpoints);
         }
-    
+
         // Compute the score
         num result = evaluation(pods);
-    
+
         return result;
     }
-    
+
     num evaluation(List<Pod> pods){
         if (pods[2].checked >= cpGoal ||
             pods[3].checked >= cpGoal ||
@@ -689,30 +692,30 @@ class Solution {
             pods[1].checked >= cpGoal ||
             pods[2].timeout <= 1 ||
             pods[3].timeout <= 1){
-            return double.INFINITY;    
+            return double.INFINITY;
         }
-        
+
         Pod myRunner = pods[0].score() > pods[1].score() ? pods[0] : pods[1];
         Pod myHarasser = myRunner.partner;
-        
+
         Pod oppRunner = pods[2].score() > pods[3].score() ? pods[2] : pods[3];
         Pod oppHarasser = oppRunner.partner;
-        
+
         num score = 0;
         score += (myRunner.score() - oppRunner.score()) * 2;
         // score += (myHarasser.score() - oppRunner.score());
-        
+
         score -= myHarasser.distance(checkpoints[oppRunner.nextCP]);
         score -= myHarasser.diffAngle(oppRunner);
-        score -= oppRunner.diffAngle(checkpoints[oppRunner.nextCP]) - 
+        score -= oppRunner.diffAngle(checkpoints[oppRunner.nextCP]) -
              oppRunner.diffAngle(myHarasser);
         // score += myRunner.timeout;
         // score -= oppRunner.timeout;
-        
+
         return score;
-        
+
     }
-    
+
     void mutate(){
         for(int i = 0; i < moves0.length; i++){
             if(rand.nextDouble() < MOVE_MUTATE_RATE){
@@ -757,10 +760,10 @@ void play(List<Pod> pods, List<Checkpoint> checkpoints) {
             }
 
             // Collision with another checkpoint?
-            // It is unnecessary to check all checkpoints here. 
+            // It is unnecessary to check all checkpoints here.
             // We only test the pod's next checkpoint.
-            // We could look for the collisions of the pod with 
-            // all the checkpoints, but if such a collision happens 
+            // We could look for the collisions of the pod with
+            // all the checkpoints, but if such a collision happens
             // it wouldn't impact the game in any way
             Collision col = pods[i].collision(checkpoints[pods[i].nextCP]);
 
@@ -810,7 +813,7 @@ void testPlay(List<Pod> pods, List<Checkpoint> checkpoints) {
 Solution naiveSolution(List<Pod> startPods, int length){
     List<Pod> pods = clonePods(startPods);
     List<List<Move>> moves = new List.generate(4, (index) => []);
-    
+
     for(int moveIndex = 0; moveIndex < length; moveIndex++){
         // stderr.writeln("Naive Pods move $moveIndex of $length");
         // printPods(pods);
@@ -820,13 +823,13 @@ Solution naiveSolution(List<Pod> startPods, int length){
             if(prevCPid < 0 ){ prevCPid = cpCount - 1; }
             int nextNextCPid = pods[index].nextCP + 1;
             if(nextNextCPid >= cpCount  ){ nextNextCPid = 0; }
-            
+
             num dx = checkpoints[prevCPid].x - checkpoints[nextNextCPid].x;
-            num dy = checkpoints[prevCPid].y - checkpoints[nextNextCPid].y; 
+            num dy = checkpoints[prevCPid].y - checkpoints[nextNextCPid].y;
             num length = sqrt(dx * dx + dy * dy);
             num scaleddx = (450 / length) * dx;
             num scaleddy = (450 / length) * dy;
-            
+
             Point invert1 = new Point(
                 nextCP.x - scaleddy.round() - pods[index].vx * 3,
                 nextCP.y + scaleddx.round() - pods[index].vy * 3);
@@ -837,7 +840,7 @@ Solution naiveSolution(List<Pod> startPods, int length){
 
             Point target = pods[index].closer(invert1, invert2);
             target = new Point(nextCP.x, nextCP.y);
-            
+
             // stderr.writeln("Pod $index Angle: ${pods[index].angle} Angle to target ${pods[index].getAngle(target)} ");
             // stderr.writeln("Pod $index Diff Angle: ${pods[index].diffAngle(target)} ");
             num diffAngle = pods[index].diffAngle(target);
@@ -848,12 +851,12 @@ Solution naiveSolution(List<Pod> startPods, int length){
             }
             pods[index].apply(moves[index].last);
         });
-        
+
         play(pods, checkpoints);
     }
-    
+
     // printPods(pods);
-    
+
     return new Solution(
         moves[0],
         moves[1],
@@ -882,19 +885,19 @@ Solution monteCarlo(List<Pod> startPods, int length, int timeout){
             bestScore = randomEval;
         }
     }
-    
+
     return bestSolution;
 }
 
-Solution genetic(List<Pod> startPods, int length, 
+Solution genetic(List<Pod> startPods, int length,
     int timeout, Solution lastSolution, Solution enemySol){
     int poolSize = 10;
     List<Move> moves2;
     List<Move> moves3;
-    
+
     Stopwatch sw = new Stopwatch();
     sw.start();
-    
+
     Solution naive = naiveSolution(startPods, length);
     if(enemySol != null){
         naive.moves2 = enemySol.moves2;
@@ -905,7 +908,7 @@ Solution genetic(List<Pod> startPods, int length,
         moves2 = naive.moves2;
         moves3 = naive.moves3;
     }
-    
+
     Map<num, Solution> pool = new SplayTreeMap();
     num naiveEval = naive.score(startPods);
     pool[naiveEval] = naive;
@@ -918,15 +921,15 @@ Solution genetic(List<Pod> startPods, int length,
         //add random ones
         updateLast.moves0.add(randomMove());
         updateLast.moves1.add(randomMove());
-        
+
         //replace enemy moves
         updateLast.moves2 = moves2;
         updateLast.moves3 = moves3;
-        
+
         num updateEval = updateLast.score(startPods);
         pool[updateEval] = updateLast;
     }
-    
+
     for(int i = 0; i < poolSize; i++){
         Solution randomSolution = new Solution(
             new List.generate(length, (index) => randomMove()),
@@ -937,19 +940,19 @@ Solution genetic(List<Pod> startPods, int length,
         //stderr.writeln("${pool.length} $poolSize Random eval $randomEval");
         pool[randomEval] = randomSolution;
     }
-    
+
     // stderr.writeln("Filled pool ${pool.length} ${sw.elapsedMilliseconds}");
     stderr.writeln("Start Pool first ${pool.keys.first} last ${pool.keys.last}");
-    
+
     while(sw.elapsedMilliseconds < timeout){
         // stderr.writeln("Creating GAs ${sw.elapsedMilliseconds}");
-        
+
         Solution mutatedSolution;
         if(rand.nextDouble() < .5 || pool.length < 2){
             //mutation
             mutatedSolution = pool[pool.keys.toList()[rand.nextInt(pool.length)]].clone();
             mutatedSolution.mutate();
-            
+
         } else {
             //crossover
             int a = rand.nextInt(pool.length);
@@ -960,9 +963,9 @@ Solution genetic(List<Pod> startPods, int length,
             Solution mother = pool[pool.keys.toList()[a]];
             Solution father = pool[pool.keys.toList()[b]];
             mutatedSolution = crossover(mother, father);
-            
+
         }
-        
+
         num geneticEval = mutatedSolution.score(startPods);
         if( geneticEval > pool.keys.first && !pool.containsKey(geneticEval)){
             // stderr.writeln("Keeping GA solution $geneticEval");
@@ -971,9 +974,9 @@ Solution genetic(List<Pod> startPods, int length,
         }
     }
     stderr.writeln("End Pool first ${pool.keys.first} last ${pool.keys.last}");
-   
+
     return pool[pool.keys.last];
-    
+
 }
 
 Move randomMove(){
@@ -1005,13 +1008,13 @@ printPods(List<Pod> pods){
 
 List<Pod> clonePods(List<Pod> startPods){
     List<Pod> pods = startPods.map((pod) => pod.clone()).toList();
-    
+
     pods[0].partner = pods[1];
     pods[1].partner = pods[0];
 
     pods[2].partner = pods[3];
     pods[3].partner = pods[2];
-    
+
     return pods;
 }
 
@@ -1026,7 +1029,7 @@ List<Pod> swapPods(List<Pod> startPods){
 
 Solution crossover(Solution mother, Solution father){
     List<Move> moves0 = [];
-    List<Move> moves1 = [];    
+    List<Move> moves1 = [];
     for(int i = 0; i < mother.moves0.length; i++){
         if(rand.nextDouble() < .5){
             moves0.add(mother.moves0[i]);
@@ -1039,9 +1042,9 @@ Solution crossover(Solution mother, Solution father){
             moves1.add(father.moves1[i]);
         }
     }
-    
+
     //assume that enemy moves are the same in both parents
-    return new Solution(moves0, moves1, 
+    return new Solution(moves0, moves1,
         mother.moves2,
         mother.moves3);
 }
