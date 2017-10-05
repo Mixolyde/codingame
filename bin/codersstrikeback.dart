@@ -785,7 +785,7 @@ void play(List<Pod> pods, List<Checkpoint> checkpoints) {
         } else {
             // Move the pods to reach the time `t` of the collision
             for (int i = 0; i < pods.length; ++i) {
-                pods[i].move(firstCollision.t - t);
+                pods[i].move(firstCollision.t);
             }
 
             // Play out the collision
