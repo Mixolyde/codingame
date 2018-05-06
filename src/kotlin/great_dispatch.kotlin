@@ -1,0 +1,102 @@
+// Best score 9097.53907 100% Rank 631/699
+
+import java.util.*
+import java.io.*
+import java.math.*
+
+val MAX_VOLUME = 100
+
+/**
+ * Auto-generated code below aims at helping you parse
+ * the standard input according to the problem statement.
+ **/
+fun main(args : Array<String>) {
+    val input = Scanner(System.`in`)
+    val boxCount = input.nextInt()
+    val originalBoxes = ArrayList<Box>()
+    val trucks = ArrayList<Truck>()
+
+    for(i in 0 until 100) {
+        trucks.add(Truck(i))
+    }
+
+    for (i in 0 until boxCount) {
+        val weight = input.nextFloat()
+        val volume = input.nextFloat()
+        
+        originalBoxes.add(Box(weight, volume, trucks[0]))
+        
+    }
+
+    val boxes = ArrayList(originalBoxes)
+    boxes.sortByDescending({it.volume})
+    
+    val totalWeight = boxes.fold(0f, 
+            {acc, box:Box -> acc + box.weight})
+    val totalVolume = boxes.fold(0f, 
+            {acc, box:Box -> acc + box.volume})
+    
+    val avgWeight = totalWeight / 100;
+    
+    System.err.println("Total Weight: $totalWeight Volume: $totalVolume")
+    System.err.println("Avg Weight: $avgWeight")
+    
+    
+    var currentIndex = 0
+    for(i in 0 until boxCount) {
+        var boxFound = false
+        for(currentIndex in 0 until 100){
+            if(trucks[currentIndex].volume + boxes[i].volume < MAX_VOLUME &&
+                trucks[currentIndex].weight < avgWeight){
+                boxFound = true
+                trucks[currentIndex].add(boxes[i])
+                break
+            }
+        }
+        if(!boxFound){
+            for(currentIndex in 0 until 100){
+                if(trucks[currentIndex].volume + boxes[i].volume < MAX_VOLUME){
+                    trucks[currentIndex].add(boxes[i])
+                    break
+                }
+            }
+        }
+            
+        
+        //System.err.println(trucks[currentIndex])
+        //System.err.println(boxes[i])
+        
+    }
+
+    // Write an action using println()
+    // To debug: System.err.println("Debug messages...");
+    for(i in 0 until boxCount) {
+        print("${originalBoxes[i].truck.index} ")
+    }
+
+    println("")
+}
+
+data class Box(val weight: Float, val volume: Float, var truck:Truck)
+
+class Truck(val index: Int) {
+    var intWeight:Float = 0f;
+    var intVolume:Float = 0f;
+    
+    private val boxes: MutableList<Box> = ArrayList<Box>()
+    
+    val weight get() = intWeight
+    
+    val volume get() = intVolume
+        
+    fun add(box:Box) {
+        boxes.add(box)
+        intWeight = boxes.fold(0f, 
+            {acc, box:Box -> acc + box.weight})
+        intVolume = boxes.fold(0f, 
+            {acc, box:Box -> acc + box.volume})
+        box.truck = this
+    }
+        
+    override fun toString() = "Truck($index: weight:$weight volume:$volume)"
+}
