@@ -70,7 +70,7 @@ void main() {
 
       Checkpoint cp = new Checkpoint(1, 601, 0);
 
-      Collision col = a.collision(cp);
+      Collision? col = a.collision(cp);
       expect(col, null);
 
     });
@@ -79,8 +79,9 @@ void main() {
 
       Checkpoint cp = new Checkpoint(1, 599, 0);
 
-      Collision col = a.collision(cp);
-      expect(col.t, 0);
+      Collision? col = a.collision(cp);
+      expect(col, isNotNull);
+      expect(col!.t, 0);
 
     });
     test('t=0.5 collision', (){
@@ -88,8 +89,9 @@ void main() {
 
       Checkpoint cp = new Checkpoint(1, 1100, 0);
 
-      Collision col = a.collision(cp);
-      expect(col.t, 0.5);
+      Collision? col = a.collision(cp);
+      expect(col, isNotNull);
+      expect(col!.t, 0.5);
 
     });
     test('t=0.5 collision at angle', (){
@@ -97,8 +99,9 @@ void main() {
 
       Checkpoint cp = new Checkpoint(1, 500, 599.999);
 
-      Collision col = a.collision(cp);
-      expect(col.t, lessThanOrEqualTo(0.5));
+      Collision? col = a.collision(cp);
+      expect(col, isNotNull);
+      expect(col!.t, lessThanOrEqualTo(0.5));
       expect(col.t, greaterThanOrEqualTo(0.47));
 
     });
@@ -107,7 +110,7 @@ void main() {
 
       Checkpoint cp = new Checkpoint(1, 500, -599.99);
 
-      Collision col = a.collision(cp);
+      Collision? col = a.collision(cp);
       expect(col, null);
 
     });
@@ -116,7 +119,7 @@ void main() {
 
       Checkpoint cp = new Checkpoint(1, 500, -599.99);
 
-      Collision col = a.collision(cp);
+      Collision? col = a.collision(cp);
       expect(col, null);
 
     });
