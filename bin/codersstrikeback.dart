@@ -17,6 +17,7 @@ int turn = 0;
 Solution? lastSolution = null;
 int MYH_SQUARED = 250 * 250;
 int totalEvals = 0;
+int monteEvals = 0;
 
 /**
  * Auto-generated code below aims at helping you parse
@@ -921,6 +922,8 @@ Solution monteCarlo(List<Pod> startPods, int length, int timeout){
             bestSolution = randomSolution;
             bestScore = randomEval;
         }
+        
+        monteEvals++;
     }
 
     return bestSolution;
