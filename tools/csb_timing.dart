@@ -31,7 +31,7 @@ void main() {
   pods[3].partner = pods[2];
   
   int length = 6;
-  int timeout = 500;
+  int timeout = 2000;
   var naiveCount = naiveSolutionCount(pods, length, timeout);
   var monteCount = monteCarloSolutionCount(pods, length, timeout);
   var geneticCount = geneticSolutionCount(pods, length, timeout);

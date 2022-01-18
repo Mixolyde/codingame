@@ -35,7 +35,7 @@ void main() {
         inputs = readLineSync().split(' ');
         int checkpointX = int.parse(inputs[0]); // x position of the next check point
         int checkpointY = int.parse(inputs[1]); // y position of the next check point
-        checkpoints.add(new Checkpoint(i, checkpointX, checkpointY));
+        checkpoints.add(Checkpoint(i, checkpointX, checkpointY));
     }
 
     List<Pod> pods = List<Pod>.generate(4, (_) => 
@@ -47,7 +47,7 @@ void main() {
             for(int index = 0; index < 4; index ++){
                 inputs = readLineSync().split(' ')
                     .map((s) => int.parse(s)).toList();
-                pods[index] = new Pod(index, inputs[0], inputs[1],
+                pods[index] = Pod(index, inputs[0], inputs[1],
                     inputs[2], inputs[3], inputs[4], inputs[5]);
             }
 
@@ -173,7 +173,7 @@ class Point {
         num abx = b.x - a.x;
         num aby = b.y - a.y;
         num det = abx * abx + aby * aby;
-        num at_ab = atx*abx + aty*aby;
+        num at_ab = atx * abx + aty*aby;
         num cx = 0;
         num cy = 0;
 
@@ -191,7 +191,7 @@ class Point {
             cy = this.y;
         }
 
-        return new Point(cx, cy);
+        return Point(cx, cy);
     }
 
     // Override hashCode using strategy from Effective Java,
