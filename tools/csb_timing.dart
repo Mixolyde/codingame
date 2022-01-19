@@ -1,6 +1,10 @@
 import '../bin/codersstrikeback.dart';
 import 'package:test/test.dart';
 
+typedef SolutionCounter = int Function(List<Pod> startPods, int length, int timeout);
+List<SolutionCounter> solutionCounters = 
+  [naiveSolutionCount, monteCarloSolutionCount, geneticSolutionCount];
+
 void main() {
   // measure eval performances
   // Laps 3 CPs 4 Goal: 12
@@ -41,6 +45,7 @@ void main() {
   print("Genetic Solution Count: $geneticCount");
   
 } 
+
 int naiveSolutionCount(List<Pod> startPods, int length, int timeout){
     Solution naive = naiveSolution(startPods, length);
     int count = 0;
