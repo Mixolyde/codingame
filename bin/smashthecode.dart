@@ -4,11 +4,15 @@ import 'dart:math';
 
 // Copyright (c) 2016, Brian Grey. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
+String readLineSync() {
+  String? s = stdin.readLineSync();
+  return s == null ? '' : s;
+}
 
 Random rand = new Random(1);
-Player me;
-Player opp;
-List inputs;
+late Player me;
+late Player opp;
+late List inputs;
 List<Pair> pairs = [];
 int TURN_LIMIT = 200;
 int turn = 0;
@@ -25,18 +29,20 @@ void main() {
     while (true) {
         pairs.clear();
         //6 columns of cells, starting at the bottom
-        List<List<Cell>> myBoard = new List.generate(6, (int index) => new List<Cell>());
-        List<List<Cell>> oppBoard = new List.generate(6, (int index) => new List<Cell>());
+        List<List<Cell>> myBoard = List.generate(6, 
+          (int index) => <Cell>[]);
+        List<List<Cell>> oppBoard = List.generate(6, 
+          (int index) => <Cell>[]);
         for (int i = 0; i < 8; i++) {
-            inputs = stdin.readLineSync().split(' ');
+            inputs = readLineSync().split(' ');
             int colorA = int.parse(inputs[0]); // color of the first block
             int colorB = int.parse(inputs[1]); // color of the attached block
             pairs.add(new Pair(colorToCell(colorA), colorToCell(colorB)));
         }
-        int score1 = int.parse(stdin.readLineSync());
+        int score1 = int.parse(readLineSync());
         for (int i = 0; i < 12; i++) {
             // One line of the map ('.' = empty, '0' = skull block, '1' to '5' = colored block)
-            String row = stdin.readLineSync();
+            String row = readLineSync();
             List<Cell> cells = row.split("").map( (cell) => stringToCell(cell)).toList();
             for(int j = 0; j < 6; j++){
                 if(cells[j] != Cell.empty){
@@ -44,10 +50,10 @@ void main() {
                 }
             }
         }
-        int score2 = int.parse(stdin.readLineSync());
+        int score2 = int.parse(readLineSync());
         for (int i = 0; i < 12; i++) {
             // One line of the map ('.' = empty, '0' = skull block, '1' to '5' = colored block)
-            String row = stdin.readLineSync();
+            String row = readLineSync();
             List<Cell> cells = row.split("").map( (cell) => stringToCell(cell)).toList();
             for(int j = 0; j < 6; j++){
                 if(cells[j] != Cell.empty){
@@ -97,8 +103,8 @@ void main() {
 class Solution{
     Player p1Start;
     Player p2Start;
-    Player p1End;
-    Player p2End;
+    late Player p1End;
+    late Player p2End;
     List<Move> p1Moves;
     List<Move> p2Moves;
     List<Pair> pairs;
@@ -112,8 +118,8 @@ class Solution{
     num p1Eval = -1;
     num p2Eval = -1;
 
-    num p1Discount;
-    num p2Discount;
+    late num p1Discount;
+    late num p2Discount;
 
     Solution(this.p1Start, this.p2Start, this.pairs, this.p1Moves, this.p2Moves){
         p1End = p1Start.clone();
@@ -174,7 +180,7 @@ class Player {
             return eval;
         }
         if(!alive){
-            eval = double.NEGATIVE_INFINITY;
+            eval = double.negativeInfinity;
             return eval;
         }
         var counts = connectedCounts(board);
@@ -216,8 +222,8 @@ class Player {
         }
 
         //landing spots
-        Point top;
-        Point bottom;
+        late Point top;
+        late Point bottom;
 
         switch(move.rot){
             case 1:
@@ -642,9 +648,9 @@ Map<num, List<Move>> rankMoves(Player player){
             // stderr.writeln("Updated eval $eval");
             // printBoard(updatedPlayer.board);
             if(!rankMap.containsKey(eval)){
-                rankMap[eval] = new List<Move>();
+                rankMap[eval] = <Move>[];
             }
-            rankMap[eval].add(move);
+            rankMap[eval]!.add(move);
         }
     } else {
         stderr.writeln("!!!No valid moves, game over!!!");
@@ -655,7 +661,7 @@ Map<num, List<Move>> rankMoves(Player player){
 }
 
 List<Set<Point>> connectedColors(List<List<Cell>> board){
-    List<Set<Point>> blobs = new List<Set<Point>>();
+    List<Set<Point>> blobs = <Set<Point>>[];
     Set<Point> allBlobbed = new Set<Point>();
     for(int row = 0; row < 6; row++){
         for(int col = 0; col < board[row].length; col++){

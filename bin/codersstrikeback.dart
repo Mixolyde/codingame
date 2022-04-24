@@ -716,6 +716,8 @@ class Solution {
             pods[3].timeout <= 1){
             return double.infinity;
         }
+        
+
 
         Pod myRunner = pods[0].score() > pods[1].score() ? pods[0] : pods[1];
         //TODO factor in harassers?
@@ -727,6 +729,14 @@ class Solution {
         num score = 0;
         score += (myRunner.score() - oppRunner.score());
         // score += (myHarasser.score() - oppRunner.score());
+        
+        //oppRunner distance to next CP
+        //oppRunner distance to next next CP
+        //oppHarasser dist myRunner
+        //myrunner distance to next CP
+        //myrunner distance to next next CP
+        //myblocker distance oppRunner
+        //myblocker distance opprunner next CP        
         
         Point oppCP = checkpoints[oppRunner.nextCP];
         // num cpRange = 250;
