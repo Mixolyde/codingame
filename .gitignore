@@ -23,5 +23,5 @@ doc/api/
 *.ipr
 *.iws
 
-# Atom IDE
-.atom/
+# VS Code IDE
+.vscode
