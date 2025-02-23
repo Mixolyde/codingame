@@ -4,18 +4,18 @@ import 'dart:io';
  * Auto-generated code below aims at helping you parse
  * the standard input according to the problem statement.
  **/
-int nbFloors; // number of floors
-int width; // width of the area
-int nbRounds; // maximum number of rounds
-int exitFloor; // floor on which the exit is found
-int exitPos; // position of the exit on its floor
-int nbTotalClones; // number of generated clones
-int nbElevators; // number of elevators
+late int nbFloors; // number of floors
+late int width; // width of the area
+late int nbRounds; // maximum number of rounds
+late int exitFloor; // floor on which the exit is found
+late int exitPos; // position of the exit on its floor
+late int nbTotalClones; // number of generated clones
+late int nbElevators; // number of elevators
 int round = 0;
 
 void main() {
     List inputs;
-    inputs = stdin.readLineSync().split(' ');
+    inputs = stdin.readLineSync()!.split(' ');
     nbFloors = int.parse(inputs[0]); // number of floors
     width = int.parse(inputs[1]); // width of the area
     nbRounds = int.parse(inputs[2]); // maximum number of rounds
@@ -27,7 +27,7 @@ void main() {
     List<List<int>> elevatorPos = new List.generate(nbFloors, (i) => []);
     List<List<int>> blockPos = new List.generate(nbFloors, (i) => []);
     for (int i = 0; i < nbElevators; i++) {
-        inputs = stdin.readLineSync().split(' ');
+        inputs = stdin.readLineSync()!.split(' ');
         elevatorPos[int.parse(inputs[0])].add(int.parse(inputs[1])); // position of the elevator on its floor
     }
 
@@ -43,7 +43,7 @@ void main() {
     while (true) {
         if(solution != null){
             //still have to grab inputs
-            inputs = stdin.readLineSync().split(' ');
+            inputs = stdin.readLineSync()!.split(' ');
             if(solution.isNotEmpty){
                 Move move = solution.first;
                 solution = solution.skip(1);
@@ -56,7 +56,7 @@ void main() {
 
         } else {
             // round++;
-            inputs = stdin.readLineSync().split(' ');
+            inputs = stdin.readLineSync()!.split(' ');
             int cloneFloor = int.parse(inputs[0]); // floor of the leading clone
             int clonePos = int.parse(inputs[1]); // position of the leading clone on its floor
             String direction = inputs[2]; // direction of the leading clone: LEFT or RIGHT
@@ -103,7 +103,7 @@ class Game {
     }
 
     List<Move> legalMoves() {
-        var legals = [];
+        List<Move> legals = [];
         //if we're out of time, or above the exit floor no legal moves
         if(round >= nbRounds || cloneFloor > exitFloor){
             return legals;
@@ -199,10 +199,10 @@ class Game {
     String toString() => "|[$clonePos, $cloneFloor] $round $facingRight $addlElevators $elevatorPos $blockPos|";
 
     Game clone() {
-        var newElevators = new List.generate(elevatorPos.length,
+        List<List<int>> newElevators = new List.generate(elevatorPos.length,
         (i) => new List.from(elevatorPos[i]));
-        var newMoves = new List.from(moves);
-        var newBlocks = new List.generate(blockPos.length,
+        List<Move> newMoves = new List.from(moves);
+        List<List<int>> newBlocks = new List.generate(blockPos.length,
         (i) => new List.from(blockPos[i]));
 
         return new Game(cloneFloor, clonePos, round, facingRight,
@@ -225,7 +225,7 @@ class BlockMove extends Move {
 }
 
 List<Move> search(Game game){
-    List<Game> open = new List();
+    List<Game> open = [];
     open.add(game);
     List<int> closestPos = [game.clonePos, game.cloneFloor];
     int closestDist = (exitPos - game.clonePos).abs() +

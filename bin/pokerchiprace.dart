@@ -2,13 +2,13 @@ import 'dart:collection';
 import 'dart:io';
 import 'dart:math';
 
-int playerChipCount;
+late int playerChipCount;
 int turn = 0;
 
 Random rand = new Random(3);
 Map<int, Solution> lastSolutions = {};
-Game lastGame;
-List<Wall> walls;
+late Game lastGame;
+List<Wall> walls = [];
 int maxId = 0;
 
 int MAX_WIDTH = 800;
@@ -28,7 +28,7 @@ int totalEvals = 0;
  **/
 void main() {
     List inputs;
-    int playerId = int.parse(stdin.readLineSync()); // your id (0 to 4)
+    int playerId = int.parse(stdin.readLineSync()!); // your id (0 to 4)
     // stderr.writeln("My playerId $playerId");
     
     walls = [
@@ -53,12 +53,12 @@ void main() {
         oppChips.clear();
         droplets.clear();
         
-        playerChipCount = int.parse(stdin.readLineSync()); // The number of chips under your control
+        playerChipCount = int.parse(stdin.readLineSync()!); // The number of chips under your control
         
-        int entityCount = int.parse(stdin.readLineSync()); // The total number of entities on the table, including your chips
+        int entityCount = int.parse(stdin.readLineSync()!); // The total number of entities on the table, including your chips
         List<int> aliveIds = [];
         for (int i = 0; i < entityCount; i++) {
-            inputs = stdin.readLineSync().split(' ');
+            inputs = stdin.readLineSync()!.split(' ');
             // stderr.writeln(inputs);
             int id = int.parse(inputs[0]); // Unique identifier for this entity
             if (id > maxId){
@@ -88,13 +88,13 @@ void main() {
             if(unitsGlobal[id] == null){
                 unitsGlobal[id] = unit;
             } else {
-                unitsGlobal[id].radius = radius;
-                unitsGlobal[id].x = x;
-                unitsGlobal[id].y = y;
-                unitsGlobal[id].vx = vx;
-                unitsGlobal[id].vy = vy;
-                unitsGlobal[id].simTime = 0;
-                unitsGlobal[id].father = unitsGlobal[id];
+                unitsGlobal[id]!.radius = radius;
+                unitsGlobal[id]!.x = x;
+                unitsGlobal[id]!.y = y;
+                unitsGlobal[id]!.vx = vx;
+                unitsGlobal[id]!.vy = vy;
+                unitsGlobal[id]!.simTime = 0;
+                unitsGlobal[id]!.father = unitsGlobal[id]!;
             }
             
         }
@@ -1227,7 +1227,7 @@ class Collision {
     int get hashCode {
         int result = 17;
         result = 37 * result + a.id + b.id;
-        result = 37 * result + t;
+        result = 37 * result + t.hashCode;
         return result;
     }
 

@@ -194,4 +194,4 @@ void main() {
 
 }
 
-List<List<Cell>> getEmptyBoard() { return new List.generate(6, (int index) => new List<Cell>()); }
+List<List<Cell>> getEmptyBoard() { return new List.generate(6, (int index) => []); }
