@@ -63,6 +63,31 @@ void main() {
       expect(bitboard.height, [1, 8, 16, 24, 32, 40, 48, 59, 68]);
       expect(bitboard.moves, [0, 8, 7, 8, 7, 8, 7, 8]);
     });
+    test('undo moves', () {
+      Bitboard bitboard = Bitboard();
+      bitboard.makeMove(0);
+      bitboard.makeMove(8);
+      bitboard.makeMove(7);
+      bitboard.makeMove(8);
+      bitboard.makeMove(7);
+      bitboard.makeMove(8);
+      bitboard.makeMove(7);
+      bitboard.makeMove(8);
+      bitboard.undoMove();
+      bitboard.undoMove();
+      bitboard.undoMove();
+      bitboard.undoMove();
+      bitboard.undoMove();
+      bitboard.undoMove();
+      bitboard.undoMove();
+      bitboard.undoMove();
+      bitboard.printBoard();
+      expect(bitboard.p0board, BigInt.zero);
+      expect(bitboard.p1board, BigInt.zero);
+      expect(bitboard.counter, 0);
+      expect(bitboard.height, [0, 8, 16, 24, 32, 40, 48, 56, 64]);
+      expect(bitboard.moves, []);
+    });
 
   });
 

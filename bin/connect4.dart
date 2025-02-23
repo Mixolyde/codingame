@@ -65,6 +65,7 @@ class Bitboard{
   // 1  9 17 25 33 41 49 57 65
   // 0  8 16 24 32 40 48 56 64
   // -------------------------
+
   BigInt p0board = BigInt.zero;
   BigInt p1board = BigInt.zero;
   int counter = 0;
@@ -72,19 +73,6 @@ class Bitboard{
   List<int> moves = [];
 
   Bitboard(){
-  }
-
-  Bitboard.from(List<String> boardRows, int counter){
-    counter = counter;
-    for(int i = 0; i < HEIGHT; i++){
-      for(int j = 0; j < WIDTH; j++){
-        if(boardRows[i][j] == '0'){
-          p0board |= BigInt.from( 1 << (i * WIDTH + j));
-        } else if (boardRows[i][j] == '1'){
-          p1board |= BigInt.from( 1 << (i * WIDTH + j));
-        }
-      }
-    }
   }
 
   void printBoard(){
@@ -120,5 +108,19 @@ class Bitboard{
     moves.add(move);
     counter++;
   }
+
+  void undoMove(){
+    counter--;
+    int move = moves.removeLast();
+    height[move]--;
+
+    if(counter % 2 == 0){
+      p0board ^= (BigInt.one << height[move]);
+    } else {
+      p1board ^= (BigInt.one << height[move]);
+    }
+  }
+
+  // magic numbers are 1, 7, 8, 9
 
 }
