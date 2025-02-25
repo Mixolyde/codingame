@@ -15,6 +15,8 @@ void main() {
       expect(bitboard.counter, 0);
       expect(bitboard.height, [0, 8, 16, 24, 32, 40, 48, 56, 64]);
       expect(bitboard.moves, []);
+      expect(bitboard.isWin(0), false);
+      expect(bitboard.isWin(1), false);
     });
     test('1 across bottom', () {
       Bitboard bitboard = Bitboard();
@@ -33,6 +35,8 @@ void main() {
       expect(bitboard.counter, 9);
       expect(bitboard.height, [1, 9, 17, 25, 33, 41, 49, 57, 65]);
       expect(bitboard.moves, [0, 1, 2, 3, 4, 5, 6, 7, 8]);
+      expect(bitboard.isWin(0), false);
+      expect(bitboard.isWin(1), false);
     });
     test('X wins', () {
       Bitboard bitboard = Bitboard();
@@ -47,6 +51,8 @@ void main() {
       expect(bitboard.counter, 7);
       expect(bitboard.height, [4, 11, 16, 24, 32, 40, 48, 56, 64]);
       expect(bitboard.moves, [0, 1, 0, 1, 0, 1, 0]);
+      expect(bitboard.isWin(0), true);
+      expect(bitboard.isWin(1), false);
     });
     test('y wins', () {
       Bitboard bitboard = Bitboard();
@@ -62,6 +68,8 @@ void main() {
       expect(bitboard.counter, 8);
       expect(bitboard.height, [1, 8, 16, 24, 32, 40, 48, 59, 68]);
       expect(bitboard.moves, [0, 8, 7, 8, 7, 8, 7, 8]);
+      expect(bitboard.isWin(0), false);
+      expect(bitboard.isWin(1), true);
     });
     test('undo moves', () {
       Bitboard bitboard = Bitboard();
@@ -87,6 +95,8 @@ void main() {
       expect(bitboard.counter, 0);
       expect(bitboard.height, [0, 8, 16, 24, 32, 40, 48, 56, 64]);
       expect(bitboard.moves, []);
+      expect(bitboard.isWin(0), false);
+      expect(bitboard.isWin(1), false);
     });
 
   });

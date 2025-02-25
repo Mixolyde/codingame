@@ -122,5 +122,31 @@ class Bitboard{
   }
 
   // magic numbers are 1, 7, 8, 9
-
+  bool isWin(int player) {
+    List<int> directions = [1, 7, 8, 9];
+    BigInt bitboard;
+    for(int direction in directions) {
+      switch (player) {
+        case 0:
+          bitboard = p0board;
+          break;
+        case 1:
+          bitboard = p1board;
+          break;
+        default:
+          return false;
+      }
+      stderr.writeln("bitboard: $bitboard");
+      stderr.writeln("bitboard2: ${bitboard >> direction}");
+      stderr.writeln("bitboard3: ${bitboard >> (2 * direction)}");
+      stderr.writeln("bitboard4: ${bitboard >> (3 * direction)}");
+      stderr.writeln("if: ${bitboard & (bitboard >> direction) &
+        (bitboard >> (2 * direction)) & (bitboard >> (3 * direction))}");
+      
+      if (bitboard & (bitboard >> direction) &
+           (bitboard >> (2 * direction)) & (bitboard >> (3 * direction)) != BigInt.zero)
+        return true;
+    }
+    return false;
+  }
 }
