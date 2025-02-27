@@ -136,12 +136,6 @@ class Bitboard{
         default:
           return false;
       }
-      stderr.writeln("bitboard: $bitboard");
-      stderr.writeln("bitboard2: ${bitboard >> direction}");
-      stderr.writeln("bitboard3: ${bitboard >> (2 * direction)}");
-      stderr.writeln("bitboard4: ${bitboard >> (3 * direction)}");
-      stderr.writeln("if: ${bitboard & (bitboard >> direction) &
-        (bitboard >> (2 * direction)) & (bitboard >> (3 * direction))}");
       
       if (bitboard & (bitboard >> direction) &
            (bitboard >> (2 * direction)) & (bitboard >> (3 * direction)) != BigInt.zero)
@@ -149,4 +143,19 @@ class Bitboard{
     }
     return false;
   }
+
+  List<int> listMoves() {
+    List<int> moves = [];
+    // 0b1000000_1000000_1000000_1000000_1000000_1000000_1000000_1000000_1000000L;
+    BigInt TOP = BigInt.parse(
+      // 776666666666555555555544444444443333333333222222222211111111110000000000
+      // 109876543210987654321098765432109876543210987654321098765432109876543210
+        '100000001000000010000000100000001000000010000000100000001000000010000000',
+        radix: 2);
+
+    for(int col = 0; col < WIDTH; col++) {
+        if ((TOP & (BigInt.one << height[col])) == BigInt.zero) moves.add(col);
+    }
+    return moves;
+}
 }
